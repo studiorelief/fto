@@ -43,3 +43,22 @@
 .publications_cards:hover .publications_cards_asset {
   background-color: var(--_theme---background-fill--primary-active);
 }
+
+/*
+==============================
+🌟 Cards / Animations 🌟
+==============================
+*/
+
+[animation='scale-down'] img,
+[animation='scale-up'] img {
+  transition: transform 0.2s ease-out;
+}
+
+[animation='scale-down']:hover img {
+  transform: scale(0.95);
+}
+
+[animation='scale-up']:hover img {
+  transform: scale(1.05);
+}
