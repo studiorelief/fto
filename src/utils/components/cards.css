@@ -1,0 +1,45 @@
+/*
+==============================
+🌟 Cards / Arrow Hover 🌟
+==============================
+*/
+
+.arrow-hover-bg {
+  transition: transform 0.2s ease-out;
+}
+
+.arrow-hover-icon {
+  transition: color 0.2s ease-out;
+}
+
+[arrow-hover='trigger']:hover .arrow-hover-bg {
+  transform: translate(0%, 1px);
+}
+
+[arrow-hover='trigger']:hover .arrow-hover-icon {
+  color: var(--_theme---icons--invert);
+}
+
+/*
+==============================
+🌟 Cards / Date 🌟
+==============================
+*/
+
+.date-tag {
+  transition: background-color 0.2s ease-out;
+}
+
+[date-tag='trigger']:hover .date-tag {
+  background-color: var(--_theme---background-fill--primary-default);
+}
+
+/*
+==============================
+🌟 Cards / Publications 🌟
+==============================
+*/
+
+.publications_cards:hover .publications_cards_asset {
+  background-color: var(--_theme---background-fill--primary-active);
+}

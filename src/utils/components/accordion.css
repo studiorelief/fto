@@ -1,0 +1,27 @@
+/*
+==============================
+🌟 Hover State 🌟
+==============================
+*/
+
+.faq_item:hover .faq_header {
+  padding-left: var(--_layout---spacing--xhuge);
+}
+
+.faq_item:hover .faq_arrow-scale {
+  transform: scale(1.15);
+}
+
+/*
+==============================
+🌟 Active State 🌟
+==============================
+*/
+
+.faq_item.is-active-accordion .faq_header {
+  padding-left: var(--_layout---spacing--xhuge);
+}
+
+.faq_item.is-active-accordion .faq_arrow-scale {
+  transform: scale(1.15);
+}

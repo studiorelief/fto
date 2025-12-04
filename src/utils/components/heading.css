@@ -1,0 +1,17 @@
+.heading-highlight {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-3deg);
+  width: 110%;
+  height: 110%;
+  background-color: var(--_theme---background-fill--highlight-text);
+  border-radius: var(--_sizes---border-radius--medium);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.heading-text {
+  position: relative;
+  z-index: 1;
+}
