@@ -4,6 +4,11 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 export const logoRotationScroll = () => {
+  const mobileMediaQuery = window.matchMedia('(max-width: 991px)');
+
+  // Animation uniquement sur mobile
+  if (!mobileMediaQuery.matches) return;
+
   const elements = document.querySelectorAll<HTMLElement>('[gsap="rotation-right"]');
 
   if (!elements.length) return;

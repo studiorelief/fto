@@ -8,7 +8,7 @@
   background-color: var(--_theme---background-fill--highlight-text);
   border-radius: var(--_sizes---border-radius--medium);
   pointer-events: none;
-  z-index: -1;
+  z-index: 0;
 }
 
 .heading-text {

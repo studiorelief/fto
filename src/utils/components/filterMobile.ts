@@ -75,8 +75,10 @@ export function filterMobile() {
     isHubOpen = true;
   }
 
-  // Initialisation de l'état : démarrer fermé
-  setClosedState(true);
+  // Initialisation de l'état : démarrer fermé uniquement en mobile
+  if (mobileMediaQuery.matches) {
+    setClosedState(true);
+  }
 
   // Handler de clic
   function handleFilterClick(e: Event) {
@@ -95,10 +97,13 @@ export function filterMobile() {
 
   hubFilterButton.addEventListener('click', handleFilterClick);
 
-  // Reset quand on repasse en desktop
+  // Gérer les changements de breakpoint
   mobileMediaQuery.addEventListener('change', (e) => {
-    if (!e.matches && hubSide) {
-      // Nettoyer les styles inline pour laisser le CSS desktop s'appliquer
+    if (e.matches) {
+      // On entre en mobile : fermer le hub sans animation
+      setClosedState(true);
+    } else if (hubSide) {
+      // On repasse en desktop : nettoyer les styles inline pour laisser le CSS desktop s'appliquer
       hubSide.style.transform = '';
       hubSide.style.transition = '';
 
