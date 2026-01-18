@@ -10,6 +10,31 @@ import gsap from 'gsap';
  *
  * Fermeture avec .auth_background, .auth_close ou la touche Escape
  */
+
+// Références globales pour l'ouverture/fermeture programmatique
+let _openPopup: (() => void) | null = null;
+let _closePopup: (() => void) | null = null;
+
+/**
+ * Ouvre le popup d'authentification (peut être appelé depuis d'autres modules)
+ */
+export function openAuthPopup(): void {
+  if (_openPopup) {
+    _openPopup();
+  } else {
+    console.warn('[FTO Auth] Popup not initialized yet');
+  }
+}
+
+/**
+ * Ferme le popup d'authentification (peut être appelé depuis d'autres modules)
+ */
+export function closeAuthPopup(): void {
+  if (_closePopup) {
+    _closePopup();
+  }
+}
+
 export const authSide = () => {
   // Récupérer tous les triggers
   const triggers = document.querySelectorAll('[trigger="auth"]');
@@ -124,6 +149,10 @@ export const authSide = () => {
       );
     }
   };
+
+  // Exposer les fonctions pour utilisation externe
+  _openPopup = openPopup;
+  _closePopup = closePopup;
 
   // Ajouter un event listener sur chaque trigger pour ouvrir
   triggers.forEach((trigger) => {
