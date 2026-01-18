@@ -12,7 +12,10 @@ import { copyUrl } from '$utils/components/share';
 import { loadAttributesScripts } from '$utils/global/loadScript';
 import { initMarker } from '$utils/global/marker';
 import { projectLink } from '$utils/page/home/projectLink';
-import { tabLink } from '$utils/webapp/tabLink';
+// WebApp - Auth & API
+import { initAuthForm, initAuthGuard } from '$utils/webapp/auth';
+import { tabLink } from '$utils/webapp/front/tabLink';
+import { initReportDetail, initReportsDisplay } from '$utils/webapp/reports';
 
 window.Webflow ||= [];
 window.Webflow.push(() => {
@@ -38,4 +41,8 @@ window.Webflow.push(() => {
 
   /* Web App */
   tabLink();
+  initAuthForm();
+  initAuthGuard(); // Vérifie l'auth sur les pages protégées
+  initReportsDisplay(); // Liste des rapports Power BI
+  initReportDetail(); // Détail d'un rapport Power BI
 });
