@@ -14,9 +14,9 @@
  * - [data-report-detail="back"]       : Bouton retour
  */
 
+import type { ReportResponse } from '../api/types';
 import { isAuthenticated } from '../auth';
 import { getReportById } from './reportsService';
-import type { ReportResponse } from '../api/types';
 
 // ============================================
 // Selectors
@@ -189,40 +189,45 @@ async function loadReport(reportId: number): Promise<void> {
 
 /**
  * Affiche les détails du rapport
+ * Supporte plusieurs éléments avec le même attribut
  */
 function renderReport(report: ReportResponse): void {
-  // Titre
-  const nameEl = document.querySelector(SELECTORS.NAME);
-  if (nameEl) {
-    nameEl.textContent = report.name;
-  }
+  // Titre (peut y avoir plusieurs éléments)
+  const nameEls = document.querySelectorAll<HTMLElement>(SELECTORS.NAME);
+  nameEls.forEach((el) => {
+    el.textContent = report.name;
+  });
 
-  // Catégorie
-  const categoryEl = document.querySelector(SELECTORS.CATEGORY);
-  if (categoryEl) {
-    categoryEl.textContent = report.category_name || 'Non catégorisé';
-  }
+  // Catégorie (peut y avoir plusieurs éléments)
+  const categoryEls = document.querySelectorAll<HTMLElement>(SELECTORS.CATEGORY);
+  categoryEls.forEach((el) => {
+    el.textContent = report.category_name || 'Non catégorisé';
+  });
 
-  // Image
-  const imageEl = document.querySelector<HTMLImageElement>(SELECTORS.IMAGE);
-  if (imageEl && report.image_url) {
-    imageEl.src = report.image_url;
-    imageEl.alt = report.name;
-  }
+  // Image (peut y avoir plusieurs éléments)
+  const imageEls = document.querySelectorAll<HTMLImageElement>(SELECTORS.IMAGE);
+  imageEls.forEach((el) => {
+    if (report.image_url) {
+      el.src = report.image_url;
+      el.alt = report.name;
+    }
+  });
 
-  // Description (si présent dans l'API)
-  const descEl = document.querySelector(SELECTORS.DESCRIPTION);
-  if (descEl) {
-    // Note: Le champ description n'est pas dans l'API actuelle
-    // descEl.textContent = report.description || '';
-  }
+  // Description (peut y avoir plusieurs éléments)
+  // Note: Le champ description n'est pas dans l'API actuelle
+  // const descEls = document.querySelectorAll<HTMLElement>(SELECTORS.DESCRIPTION);
+  // descEls.forEach((el) => {
+  //   el.textContent = report.description || '';
+  // });
 
-  // Embed Power BI
-  const embedEl = document.querySelector<HTMLIFrameElement>(SELECTORS.EMBED);
-  if (embedEl && report.report_url) {
-    embedEl.src = report.report_url;
-    embedEl.title = report.name;
-  }
+  // Embed Power BI (peut y avoir plusieurs éléments)
+  const embedEls = document.querySelectorAll<HTMLIFrameElement>(SELECTORS.EMBED);
+  embedEls.forEach((el) => {
+    if (report.embed_url) {
+      el.src = report.embed_url;
+      el.title = report.name;
+    }
+  });
 
   // Mettre à jour le titre de la page
   document.title = `${report.name} | France Tourisme Observation`;

@@ -204,7 +204,7 @@ function setupLoginForm(form: HTMLFormElement): void {
       try {
         const result = await login({ email, password });
 
-        if (result.success) {
+        if (result.success && result.data) {
           // Succès : masquer l'erreur
           hideError(errorElement);
 
@@ -218,7 +218,7 @@ function setupLoginForm(form: HTMLFormElement): void {
           updateShowHideElements();
         } else {
           // Erreur : afficher le message
-          showError(errorElement, result.error);
+          showError(errorElement, result.error || 'Identifiants incorrects');
         }
       } catch (error) {
         showError(errorElement, 'Une erreur est survenue. Veuillez réessayer.');
@@ -343,6 +343,7 @@ function updateUIBasedOnAuthState(): void {
 }
 
 // Track current card for animations
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 let currentCard: 'login' | 'logged' | 'forgot' | 'reset' = 'login';
 
 /**
@@ -514,6 +515,7 @@ function hideError(element: HTMLElement | null | undefined): void {
 /**
  * Affiche l'état de succès après connexion
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function showSuccessState(form: HTMLFormElement): void {
   // Masquer le formulaire
   form.style.display = 'none';
