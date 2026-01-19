@@ -23,15 +23,5 @@ typings/
 
 # dotenv environment variables file
 .env
-.env.*
-
-# Security - certificates and sensitive files
-*.crt
-*.pem
-*.key
-api-certificate.crt
-
-# Test files with potential credentials
-# test-auth.html  # Uncomment if you want to exclude
 
 # Production files

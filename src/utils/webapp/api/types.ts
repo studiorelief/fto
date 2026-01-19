@@ -1,23 +1,31 @@
 /**
- * Types TypeScript pour l'API France Tourisme Observation
- * Générés à partir de l'OpenAPI spec
+ * API Types - France Tourisme Observation
+ *
+ * Interfaces TypeScript pour les requêtes et réponses API
  */
+
+// ============================================
+// Generic API Response
+// ============================================
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  status?: number;
+}
 
 // ============================================
 // Auth Types
 // ============================================
 
-export interface UserLogin {
+export interface LoginRequest {
   email: string;
   password: string;
 }
 
-export interface UserCreate {
-  email: string;
-  name: string;
-  password: string;
-  company_id: number;
-}
+// Alias pour login
+export type UserLogin = LoginRequest;
 
 export interface TokenWithRefresh {
   access_token: string;
@@ -44,126 +52,115 @@ export interface ResetPasswordRequest {
 
 export interface User {
   id: number;
-  name: string;
   email: string;
-  company_id: number;
-  company_name: string;
-  custom_permissions: string; // JSON string of permissions array
-}
-
-export interface UserPermissions {
-  permissions: string[];
-}
-
-// ============================================
-// Category Types
-// ============================================
-
-export interface CategoryCreate {
   name: string;
-  image_url: string;
-  active?: boolean;
+  company_name?: string;
+  custom_permissions: string; // JSON string with array of permissions
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface CategoryResponse {
-  id: number;
+export interface UserCreate {
+  email: string;
+  password: string;
   name: string;
-  image_url: string;
-  active: boolean;
-}
-
-export interface CategoryUpdate {
-  name?: string | null;
-  image_url?: string | null;
-  active?: boolean | null;
-}
-
-// ============================================
-// Report Types
-// ============================================
-
-export interface ReportCreate {
-  category_id: number;
-  name: string;
-  powerbi_report_guid: string;
-  powerbi_workspace_guid: string;
-  report_url: string;
-  image_url: string;
-  active?: boolean;
-}
-
-export interface ReportResponse {
-  id: number;
-  category_id: number;
-  category_name: string;
-  name: string;
-  powerbi_report_guid: string;
-  powerbi_workspace_guid: string;
-  report_url: string;
-  image_url: string;
-  active: boolean;
-}
-
-export interface ReportUpdate {
-  category_id?: number | null;
-  name?: string | null;
-  powerbi_report_guid?: string | null;
-  powerbi_workspace_guid?: string | null;
-  report_url?: string | null;
-  image_url?: string | null;
-  active?: boolean | null;
+  company_id?: number;
+  custom_permissions?: string;
 }
 
 // ============================================
 // Company Types
 // ============================================
 
-export interface CompanyCreate {
-  name: string;
-  default_permissions: string[];
-}
-
 export interface CompanyResponse {
   id: number;
   name: string;
-  default_permissions: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CompanyCreate {
+  name: string;
+  description?: string;
+}
+
+// ============================================
+// Category Types
+// ============================================
+
+export interface CategoryResponse {
+  id: number;
+  name: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CategoryCreate {
+  name: string;
+  description?: string;
+}
+
+export interface CategoryUpdate {
+  name?: string;
+  description?: string;
+}
+
+// ============================================
+// Report Types
+// ============================================
+
+export interface ReportResponse {
+  id: number;
+  name: string;
+  slug?: string;
+  description?: string;
+  category_id: number;
+  category_name?: string;
+  embed_url?: string;
+  image_url?: string;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReportCreate {
+  name: string;
+  description?: string;
+  category_id: number;
+  embed_url?: string;
+  image_url?: string;
+  active?: boolean;
+}
+
+export interface ReportUpdate {
+  name?: string;
+  description?: string;
+  category_id?: number;
+  embed_url?: string;
+  image_url?: string;
+  active?: boolean;
 }
 
 // ============================================
 // Admin Types
 // ============================================
 
-export interface LoginAttemptResponse {
+export interface LoginAttempt {
   id: number;
   email: string;
   ip_address: string;
   success: boolean;
-  timestamp: string;
-  user_agent: string | null;
+  failure_reason?: string;
+  created_at: string;
 }
 
-// ============================================
-// API Error Types
-// ============================================
-
-export interface ValidationError {
-  loc: (string | number)[];
-  msg: string;
-  type: string;
+export interface ActiveSession {
+  id: number;
+  user_id: number;
+  user_email: string;
+  created_at: string;
+  expires_at: string;
 }
-
-export interface HTTPValidationError {
-  detail: ValidationError[];
-}
-
-export interface APIError {
-  detail: string;
-}
-
-// ============================================
-// API Response Wrapper
-// ============================================
-
-export type ApiResponse<T> =
-  | { success: true; data: T }
-  | { success: false; error: string; status?: number };

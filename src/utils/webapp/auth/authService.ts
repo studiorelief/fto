@@ -43,8 +43,12 @@ export async function login(credentials: UserLogin): Promise<ApiResponse<User>> 
     false // Pas besoin d'auth pour login
   );
 
-  if (!tokenResponse.success) {
-    return tokenResponse;
+  if (!tokenResponse.success || !tokenResponse.data) {
+    return {
+      success: false,
+      error: tokenResponse.error || 'Erreur de connexion',
+      status: tokenResponse.status,
+    };
   }
 
   // 2. Stocker les tokens
@@ -98,7 +102,7 @@ export async function logout(): Promise<void> {
 export async function getCurrentUser(): Promise<ApiResponse<User>> {
   const response = await get<User>(USER_ENDPOINTS.ME);
 
-  if (response.success) {
+  if (response.success && response.data) {
     setStoredUser(response.data);
   }
 
@@ -147,12 +151,12 @@ export async function checkSession(): Promise<User | null> {
   // Valider la session en appelant /users/me
   const response = await getCurrentUser();
 
-  if (response.success) {
+  if (response.success && response.data) {
     return response.data;
   }
 
   // Session invalide
-  return cachedUser; // On retourne quand même le cache si disponible
+  return cachedUser ?? null; // On retourne quand même le cache si disponible
 }
 
 // ============================================

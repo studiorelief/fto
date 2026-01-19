@@ -28,10 +28,10 @@ declare global {
   }
 }
 
-import { isAuthenticated } from '../auth';
-import { getCategories, getFilteredReports, type ReportsFilters } from './reportsService';
-import { generateReportUrl } from './reportDetail';
 import type { CategoryResponse, ReportResponse } from '../api/types';
+import { isAuthenticated } from '../auth';
+import { generateReportUrl } from './reportDetail';
+import { getCategories, getFilteredReports, type ReportsFilters } from './reportsService';
 
 // ============================================
 // Selectors
@@ -81,12 +81,12 @@ let categories: CategoryResponse[] = [];
  * Initialise l'affichage des rapports
  */
 export async function initReportsDisplay(): Promise<void> {
-  console.log('[FTO Reports] Initializing reports display...');
+  // console.log('[FTO Reports] Initializing reports display...');
 
   // Vérifier si on est sur la bonne page
   const listContainer = document.querySelector(SELECTORS.LIST_CONTAINER);
   if (!listContainer) {
-    console.log('[FTO Reports] No reports list found on this page');
+    // console.log('[FTO Reports] No reports list found on this page');
     return;
   }
 
@@ -114,7 +114,7 @@ export async function initReportsDisplay(): Promise<void> {
   if (isAuthenticated()) {
     await loadAllData();
   } else {
-    console.log('[FTO Reports] User not authenticated, waiting for login...');
+    // console.log('[FTO Reports] User not authenticated, waiting for login...');
     showEmptyState('Connectez-vous pour voir les rapports');
   }
 }
@@ -123,9 +123,9 @@ export async function initReportsDisplay(): Promise<void> {
  * Charge toutes les données (catégories + rapports)
  */
 async function loadAllData(): Promise<void> {
-  console.log('[FTO Reports] Loading all data...');
+  // console.log('[FTO Reports] Loading all data...');
   hideEmptyState();
-  
+
   // Charger les catégories d'abord
   await loadCategories();
 
@@ -144,7 +144,7 @@ function initAuthEventListeners(): void {
 
   // Quand l'utilisateur se connecte → refetch les données
   window.addEventListener('auth:tokens-updated', () => {
-    console.log('[FTO Reports] Auth tokens updated, reloading data...');
+    // console.log('[FTO Reports] Auth tokens updated, reloading data...');
     if (isAuthenticated()) {
       loadAllData();
     }
@@ -152,7 +152,7 @@ function initAuthEventListeners(): void {
 
   // Quand l'utilisateur se déconnecte → vider la liste
   window.addEventListener('auth:logged-out', () => {
-    console.log('[FTO Reports] User logged out, clearing reports...');
+    // console.log('[FTO Reports] User logged out, clearing reports...');
     clearReportsList();
     showEmptyState('Connectez-vous pour voir les rapports');
   });
@@ -179,7 +179,7 @@ function clearReportsList(): void {
  */
 async function loadCategories(): Promise<void> {
   const response = await getCategories();
-  if (response.success) {
+  if (response.success && response.data) {
     categories = response.data;
     populateCategoryFilter(); // Pour les selects
     populateCategoryCheckboxes(); // Pour les checkboxes
@@ -196,7 +196,7 @@ async function loadReports(): Promise<void> {
     categoryNames: selectedCategoryNames.length > 0 ? selectedCategoryNames : undefined,
   };
 
-  console.log('[FTO Reports] Loading reports with filters:', filtersToApply);
+  // console.log('[FTO Reports] Loading reports with filters:', filtersToApply);
 
   // Afficher l'état de chargement
   showLoading();
@@ -204,9 +204,9 @@ async function loadReports(): Promise<void> {
   try {
     const response = await getFilteredReports(filtersToApply);
 
-    if (response.success) {
+    if (response.success && response.data) {
       const reports = response.data;
-      console.log('[FTO Reports] Loaded', reports.length, 'reports');
+      // console.log('[FTO Reports] Loaded', reports.length, 'reports');
 
       renderReports(reports);
       updateCount(reports.length);
@@ -253,7 +253,7 @@ function renderReports(reports: ReportResponse[]): void {
 
   // Notifier Finsweet qu'on a mis à jour la liste (si disponible)
   if (typeof window.FsAttributes !== 'undefined') {
-    console.log('[FTO Reports] Notifying Finsweet of list update...');
+    // console.log('[FTO Reports] Notifying Finsweet of list update...');
     // Trigger Finsweet refresh si disponible
     window.dispatchEvent(new CustomEvent('fs-attributes-loaded'));
   }
@@ -288,7 +288,7 @@ function createReportItem(report: ReportResponse): HTMLElement | null {
 
   // Rendre l'élément visible (au cas où le template était caché)
   item.style.display = '';
-  
+
   // IMPORTANT: Garder les attributs Finsweet pour la compatibilité
   // On change juste data-reports en data-reports-item pour éviter les conflits
   item.setAttribute('data-reports', 'item-rendered');
@@ -308,7 +308,7 @@ function initFilters(): void {
   const categoryFilter = document.querySelector<HTMLSelectElement>(SELECTORS.FILTER_CATEGORY);
   if (categoryFilter) {
     categoryFilter.addEventListener('change', (e) => {
-      const value = (e.target as HTMLSelectElement).value;
+      const { value } = e.target as HTMLSelectElement;
       currentFilters.categoryId = value ? parseInt(value, 10) : undefined;
       loadReports();
     });
@@ -328,7 +328,7 @@ function initFilters(): void {
       });
     });
 
-    console.log('[FTO Reports] Found', checkboxes.length, 'category checkboxes');
+    // console.log('[FTO Reports] Found', checkboxes.length, 'category checkboxes');
   }
 
   // Filtre par recherche
@@ -375,7 +375,7 @@ function updateSelectedCategories(): void {
     }
   });
 
-  console.log('[FTO Reports] Selected categories:', selectedCategoryNames);
+  // console.log('[FTO Reports] Selected categories:', selectedCategoryNames);
 }
 
 /**
@@ -398,12 +398,10 @@ function populateCategoryFilter(): void {
 
   // Ajouter les catégories
   categories.forEach((cat) => {
-    if (cat.active) {
-      const option = document.createElement('option');
-      option.value = cat.id.toString();
-      option.textContent = cat.name;
-      categoryFilter.appendChild(option);
-    }
+    const option = document.createElement('option');
+    option.value = cat.id.toString();
+    option.textContent = cat.name;
+    categoryFilter.appendChild(option);
   });
 }
 
@@ -421,7 +419,7 @@ function populateCategoryCheckboxes(): void {
       checkboxTemplate = template.cloneNode(true) as HTMLElement;
       template.remove();
     } else {
-      console.warn('[FTO Reports] No checkbox template found');
+      // console.warn('[FTO Reports] No checkbox template found');
       return;
     }
   }
@@ -432,7 +430,7 @@ function populateCategoryCheckboxes(): void {
 
   // Créer une checkbox pour chaque catégorie
   categories.forEach((cat) => {
-    if (cat.active && checkboxTemplate) {
+    if (checkboxTemplate) {
       const checkboxItem = checkboxTemplate.cloneNode(true) as HTMLElement;
 
       // Trouver l'input checkbox et lui ajouter data-category
@@ -467,7 +465,7 @@ function populateCategoryCheckboxes(): void {
     }
   });
 
-  console.log('[FTO Reports] Populated', categories.filter((c) => c.active).length, 'category checkboxes');
+  // console.log('[FTO Reports] Populated', categories.filter((c) => c.active).length, 'category checkboxes');
 }
 
 /**
@@ -571,7 +569,7 @@ function countVisibleItems(): number {
     // Un item est visible si son display n'est pas "none"
     const style = window.getComputedStyle(item);
     if (style.display !== 'none') {
-      visibleCount++;
+      visibleCount += 1;
     }
   });
 
@@ -584,7 +582,7 @@ function countVisibleItems(): number {
 function updateVisibleCount(): void {
   const count = countVisibleItems();
   updateCount(count);
-  console.log('[FTO Reports] Visible items count:', count);
+  // console.log('[FTO Reports] Visible items count:', count);
 
   // Afficher/cacher l'état vide selon le nombre visible
   if (count === 0) {
@@ -632,7 +630,7 @@ function initVisibilityObserver(): void {
     subtree: true,
   });
 
-  console.log('[FTO Reports] Visibility observer initialized');
+  // console.log('[FTO Reports] Visibility observer initialized');
 }
 
 let visibilityDebounce: ReturnType<typeof setTimeout>;

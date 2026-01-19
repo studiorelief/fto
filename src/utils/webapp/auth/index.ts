@@ -29,6 +29,5 @@ export {
   isProtectedPage,
   isTokenExpired,
   isTokenExpiringSoon,
-  redirectToLogin,
-  redirectAfterLogin,
+  promptLogin,
 } from './authGuard';

@@ -1,10 +1,10 @@
 /**
  * API Module - France Tourisme Observation
  *
- * Client API et configuration
+ * Export centralisé du module API
  */
 
-// Client
+// Client HTTP
 export { apiRequest, get, post } from './client';
 
 // Endpoints
@@ -21,14 +21,20 @@ export {
 
 // Types
 export type {
-  APIError,
   ApiResponse,
+  CategoryCreate,
   CategoryResponse,
+  CategoryUpdate,
+  CompanyCreate,
   CompanyResponse,
+  ForgotPasswordRequest,
+  LoginRequest,
   RefreshTokenRequest,
+  ReportCreate,
   ReportResponse,
+  ReportUpdate,
+  ResetPasswordRequest,
   TokenWithRefresh,
   User,
   UserCreate,
-  UserLogin,
 } from './types';

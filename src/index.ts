@@ -14,6 +14,7 @@ import { initMarker } from '$utils/global/marker';
 import { projectLink } from '$utils/page/home/projectLink';
 // WebApp - Auth & API
 import { initAuthForm, initAuthGuard } from '$utils/webapp/auth';
+import { initSlideLoginReset } from '$utils/webapp/front/slideLoginReset';
 import { tabLink } from '$utils/webapp/front/tabLink';
 import { initReportDetail, initReportsDisplay } from '$utils/webapp/reports';
 
@@ -43,6 +44,7 @@ window.Webflow.push(() => {
   tabLink();
   initAuthForm();
   initAuthGuard(); // Vérifie l'auth sur les pages protégées
+  initSlideLoginReset(); // Animation slide login ↔ reset
   initReportsDisplay(); // Liste des rapports Power BI
   initReportDetail(); // Détail d'un rapport Power BI
 });

@@ -10,7 +10,7 @@
 
 import gsap from 'gsap';
 
-import { checkSession, login, logout } from './authService';
+import { checkSession, forgotPassword, login, logout, resetPassword } from './authService';
 import { getStoredUser, isAuthenticated, onAuthEvent } from './authState';
 
 // ============================================
@@ -47,6 +47,24 @@ const SELECTORS = {
   // Actions
   LOGOUT_BUTTON: '[data-auth="logout"]',
   FORGOT_LINK: '[data-auth="forgot-link"]',
+  BACK_TO_LOGIN: '[data-auth="back-to-login"]',
+
+  // Formulaire mot de passe oublié (dans la card reset de la popup)
+  FORGOT_FORM: '[data-auth-reset="form"]',
+  FORGOT_EMAIL: '[data-auth-reset="email"]',
+  FORGOT_SUBMIT: '[data-auth-reset="submit"]',
+  FORGOT_ERROR: '[data-auth-reset="error"]',
+  FORGOT_SUCCESS: '[data-auth-reset="success"]',
+  FORGOT_MESSAGE: '[data-auth-reset="message-reset"]',
+  FORGOT_EMAIL_MIRROR: '[data-auth-reset="email-mirror"]',
+
+  // Formulaire nouveau mot de passe (page /reset-password)
+  NEW_PASSWORD_FORM: '[data-new-password="form"]',
+  NEW_PASSWORD_PASSWORD: '[data-new-password="password"]',
+  NEW_PASSWORD_CONFIRM: '[data-new-password="password-confirm"]',
+  NEW_PASSWORD_SUBMIT: '[data-new-password="submit"]',
+  NEW_PASSWORD_ERROR: '[data-new-password="error"]',
+  NEW_PASSWORD_SUCCESS: '[data-new-password="success"]',
 
   // Éléments à afficher/masquer selon l'état d'auth
   SHOW_IF_LOGGED: '[data-auth-show="logged"]',
@@ -61,7 +79,7 @@ const SELECTORS = {
  * Initialise le formulaire d'authentification
  */
 export function initAuthForm(): void {
-  console.log('[FTO Auth] Initializing auth form...');
+  // console.log('[FTO Auth] Initializing auth form...');
 
   // Initialiser le formulaire de login
   initLoginForm();
@@ -72,6 +90,15 @@ export function initAuthForm(): void {
   // Initialiser le lien mot de passe oublié
   initForgotPasswordLink();
 
+  // Initialiser le formulaire mot de passe oublié
+  initForgotPasswordForm();
+
+  // Initialiser le bouton retour vers login
+  initBackToLoginButton();
+
+  // Initialiser le formulaire de nouveau mot de passe (page reset)
+  initNewPasswordForm();
+
   // Écouter les événements d'authentification pour mettre à jour l'UI
   setupAuthListeners();
 
@@ -81,7 +108,7 @@ export function initAuthForm(): void {
   // Vérifier la session au chargement
   checkSession().then((user) => {
     if (user) {
-      console.log('[FTO Auth] Session restored for:', user.email);
+      // console.log('[FTO Auth] Session restored for:', user.email);
       updateUIBasedOnAuthState();
     }
   });
@@ -124,10 +151,10 @@ function initLoginForm(): void {
   }
 
   if (form) {
-    console.log('[FTO Auth] Form found:', form);
+    // console.log('[FTO Auth] Form found:', form);
     setupLoginForm(form);
   } else {
-    console.warn('[FTO Auth] No login form found on this page');
+    // console.warn('[FTO Auth] No login form found on this page');
   }
 }
 
@@ -160,12 +187,12 @@ function setupLoginForm(form: HTMLFormElement): void {
   // Cacher l'élément d'erreur par défaut
   hideError(errorElement);
 
-  console.log('[FTO Auth] Setting up form with:', {
-    emailInput: !!emailInput,
-    passwordInput: !!passwordInput,
-    submitButton: !!submitButton,
-    errorElement: !!errorElement,
-  });
+  // console.log('[FTO Auth] Setting up form with:', {
+  //   emailInput: !!emailInput,
+  //   passwordInput: !!passwordInput,
+  //   submitButton: !!submitButton,
+  //   errorElement: !!errorElement,
+  // });
 
   // Cacher l'erreur quand l'utilisateur commence à taper
   if (emailInput) {
@@ -180,14 +207,14 @@ function setupLoginForm(form: HTMLFormElement): void {
     e.preventDefault();
     e.stopPropagation();
 
-    console.log('[FTO Auth] Form submitted!');
+    // console.log('[FTO Auth] Form submitted!');
 
     // Récupérer les valeurs
     const email = emailInput?.value?.trim() || '';
     const password = passwordInput?.value || '';
 
     // Ne pas logger les credentials, même partiellement
-    console.log('[FTO Auth] Attempting login for:', email.substring(0, 3) + '***');
+    // console.log('[FTO Auth] Attempting login for:', email.substring(0, 3) + '***');
 
     // Validation basique
     if (!email || !password) {
@@ -204,7 +231,7 @@ function setupLoginForm(form: HTMLFormElement): void {
       try {
         const result = await login({ email, password });
 
-        if (result.success) {
+        if (result.success && result.data) {
           // Succès : masquer l'erreur
           hideError(errorElement);
 
@@ -218,7 +245,7 @@ function setupLoginForm(form: HTMLFormElement): void {
           updateShowHideElements();
         } else {
           // Erreur : afficher le message
-          showError(errorElement, result.error);
+          showError(errorElement, result.error || 'Identifiants incorrects');
         }
       } catch (error) {
         showError(errorElement, 'Une erreur est survenue. Veuillez réessayer.');
@@ -283,8 +310,267 @@ function initForgotPasswordLink(): void {
   forgotLinks.forEach((link) => {
     link.addEventListener('click', (e) => {
       e.preventDefault();
-      showCard('forgot');
+      animateCardTransition('login', 'forgot');
     });
+  });
+}
+
+/**
+ * Initialise le bouton retour vers login
+ */
+function initBackToLoginButton(): void {
+  const backButtons = document.querySelectorAll<HTMLElement>(SELECTORS.BACK_TO_LOGIN);
+
+  backButtons.forEach((button) => {
+    button.addEventListener('click', (e) => {
+      e.preventDefault();
+      animateCardTransition('forgot', 'login');
+    });
+  });
+}
+
+// ============================================
+// Forgot Password Form
+// ============================================
+
+/**
+ * Initialise le formulaire mot de passe oublié (dans la card reset de la popup)
+ */
+function initForgotPasswordForm(): void {
+  // Chercher le formulaire dans la card reset (c'est le formulaire "mot de passe oublié")
+  const resetCard = document.querySelector<HTMLElement>(SELECTORS.CARD_RESET);
+  if (!resetCard) return;
+
+  // Stratégie 1: Chercher avec l'attribut data-auth-reset="form"
+  let form = resetCard.querySelector<HTMLFormElement>(SELECTORS.FORGOT_FORM);
+
+  // Stratégie 2: Chercher n'importe quel formulaire dans la card
+  if (!form) {
+    form = resetCard.querySelector<HTMLFormElement>('form');
+  }
+
+  if (!form) return;
+
+  const emailInput =
+    form.querySelector<HTMLInputElement>(SELECTORS.FORGOT_EMAIL) ||
+    form.querySelector<HTMLInputElement>('input[type="email"]') ||
+    form.querySelector<HTMLInputElement>('input[name="email"]');
+
+  const submitButton =
+    form.querySelector<HTMLButtonElement>(SELECTORS.FORGOT_SUBMIT) ||
+    form.querySelector<HTMLButtonElement>('input[type="submit"]') ||
+    form.querySelector<HTMLButtonElement>('button[type="submit"]') ||
+    form.querySelector<HTMLButtonElement>('button');
+
+  const errorElement =
+    form.querySelector<HTMLElement>(SELECTORS.FORGOT_ERROR) ||
+    resetCard.querySelector<HTMLElement>(SELECTORS.FORGOT_ERROR) ||
+    form.parentElement?.querySelector<HTMLElement>('.w-form-fail');
+
+  const successElement =
+    form.querySelector<HTMLElement>(SELECTORS.FORGOT_SUCCESS) ||
+    resetCard.querySelector<HTMLElement>(SELECTORS.FORGOT_SUCCESS) ||
+    form.parentElement?.querySelector<HTMLElement>('.w-form-done');
+
+  // Message de succès personnalisé (data-auth-reset="message-reset")
+  const messageElement = resetCard.querySelector<HTMLElement>(SELECTORS.FORGOT_MESSAGE);
+
+  // Élément miroir pour afficher l'email soumis
+  const emailMirrorElement = resetCard.querySelector<HTMLElement>(SELECTORS.FORGOT_EMAIL_MIRROR);
+
+  // Cacher l'erreur, succès et message par défaut
+  hideError(errorElement);
+  if (successElement) successElement.style.display = 'none';
+  if (messageElement) messageElement.style.display = 'none';
+
+  // Cacher l'erreur quand l'utilisateur tape
+  if (emailInput) {
+    emailInput.addEventListener('input', () => {
+      hideError(errorElement);
+      if (successElement) successElement.style.display = 'none';
+    });
+  }
+
+  // Intercepter la soumission
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const email = emailInput?.value?.trim() || '';
+
+    if (!email) {
+      showError(errorElement, 'Veuillez entrer votre email.');
+      return;
+    }
+
+    // Désactiver le bouton
+    if (submitButton) {
+      submitButton.setAttribute('disabled', 'true');
+      submitButton.style.opacity = '0.6';
+      submitButton.style.cursor = 'wait';
+    }
+
+    try {
+      const result = await forgotPassword(email);
+
+      if (result.success) {
+        // Masquer le formulaire et afficher le message de succès
+        hideError(errorElement);
+        form.style.display = 'none';
+
+        // Afficher l'email soumis dans le miroir
+        if (emailMirrorElement) {
+          emailMirrorElement.textContent = email;
+        }
+
+        // Afficher le message personnalisé (data-auth-reset="message-reset")
+        if (messageElement) {
+          messageElement.style.setProperty('display', 'block', 'important');
+        }
+
+        // Afficher aussi l'élément de succès Webflow si présent
+        if (successElement) {
+          successElement.style.setProperty('display', 'block', 'important');
+        }
+      } else {
+        showError(errorElement, result.error || 'Une erreur est survenue. Veuillez réessayer.');
+      }
+    } catch (error) {
+      showError(errorElement, 'Une erreur est survenue. Veuillez réessayer.');
+      console.error('Forgot password error:', error);
+    } finally {
+      if (submitButton) {
+        submitButton.removeAttribute('disabled');
+        submitButton.style.opacity = '';
+        submitButton.style.cursor = '';
+      }
+    }
+  });
+}
+
+// ============================================
+// Reset Password Form (page /reset-password)
+// ============================================
+
+/**
+ * Initialise le formulaire de nouveau mot de passe
+ */
+function initNewPasswordForm(): void {
+  // Vérifier qu'on est sur la page reset-password
+  const urlParams = new URLSearchParams(window.location.search);
+  const token = urlParams.get('token');
+
+  if (!token) return; // Pas de token, pas de formulaire à initialiser
+
+  // Chercher le formulaire
+  let form = document.querySelector<HTMLFormElement>(SELECTORS.NEW_PASSWORD_FORM);
+
+  // Fallback: chercher n'importe quel formulaire sur la page
+  if (!form) {
+    form = document.querySelector<HTMLFormElement>('form');
+  }
+
+  if (!form) return;
+
+  const passwordInput =
+    form.querySelector<HTMLInputElement>(SELECTORS.NEW_PASSWORD_PASSWORD) ||
+    form.querySelector<HTMLInputElement>('input[type="password"]') ||
+    form.querySelector<HTMLInputElement>('input[name="password"]');
+
+  const confirmInput =
+    form.querySelector<HTMLInputElement>(SELECTORS.NEW_PASSWORD_CONFIRM) ||
+    form.querySelectorAll<HTMLInputElement>('input[type="password"]')[1];
+
+  const submitButton =
+    form.querySelector<HTMLButtonElement>(SELECTORS.NEW_PASSWORD_SUBMIT) ||
+    form.querySelector<HTMLButtonElement>('input[type="submit"]') ||
+    form.querySelector<HTMLButtonElement>('button[type="submit"]') ||
+    form.querySelector<HTMLButtonElement>('button');
+
+  const errorElement =
+    document.querySelector<HTMLElement>(SELECTORS.NEW_PASSWORD_ERROR) ||
+    form.parentElement?.querySelector<HTMLElement>('.w-form-fail');
+
+  const successElement =
+    document.querySelector<HTMLElement>(SELECTORS.NEW_PASSWORD_SUCCESS) ||
+    form.parentElement?.querySelector<HTMLElement>('.w-form-done');
+
+  // Cacher erreur et succès par défaut
+  hideError(errorElement);
+  if (successElement) successElement.style.display = 'none';
+
+  // Cacher l'erreur quand l'utilisateur tape
+  if (passwordInput) {
+    passwordInput.addEventListener('input', () => hideError(errorElement));
+  }
+  if (confirmInput) {
+    confirmInput.addEventListener('input', () => hideError(errorElement));
+  }
+
+  // Intercepter la soumission
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const password = passwordInput?.value || '';
+    const confirmPassword = confirmInput?.value || '';
+
+    // Validation
+    if (!password) {
+      showError(errorElement, 'Veuillez entrer un mot de passe.');
+      return;
+    }
+
+    if (confirmInput && password !== confirmPassword) {
+      showError(errorElement, 'Les mots de passe ne correspondent pas.');
+      return;
+    }
+
+    // Validation du mot de passe (min 8 caractères, 1 majuscule, 1 chiffre, 1 spécial)
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
+    if (!passwordRegex.test(password)) {
+      showError(
+        errorElement,
+        'Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial.'
+      );
+      return;
+    }
+
+    // Désactiver le bouton
+    if (submitButton) {
+      submitButton.setAttribute('disabled', 'true');
+      submitButton.style.opacity = '0.6';
+      submitButton.style.cursor = 'wait';
+    }
+
+    try {
+      const result = await resetPassword(token, password);
+
+      if (result.success) {
+        // Masquer le formulaire et afficher le succès
+        hideError(errorElement);
+        form.style.display = 'none';
+        if (successElement) {
+          successElement.style.setProperty('display', 'block', 'important');
+          successElement.textContent =
+            'Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter.';
+        }
+      } else {
+        showError(
+          errorElement,
+          result.error || 'Le lien de réinitialisation est invalide ou a expiré.'
+        );
+      }
+    } catch (error) {
+      showError(errorElement, 'Une erreur est survenue. Veuillez réessayer.');
+      console.error('Reset password error:', error);
+    } finally {
+      if (submitButton) {
+        submitButton.removeAttribute('disabled');
+        submitButton.style.opacity = '';
+        submitButton.style.cursor = '';
+      }
+    }
   });
 }
 
@@ -325,7 +611,7 @@ function updateShowHideElements(): void {
 function updateUIBasedOnAuthState(): void {
   const isLoggedIn = isAuthenticated();
 
-  console.log('[FTO Auth] Updating UI, isLoggedIn:', isLoggedIn);
+  // console.log('[FTO Auth] Updating UI, isLoggedIn:', isLoggedIn);
 
   // Mettre à jour les éléments show/hide
   updateShowHideElements();
@@ -343,6 +629,7 @@ function updateUIBasedOnAuthState(): void {
 }
 
 // Track current card for animations
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 let currentCard: 'login' | 'logged' | 'forgot' | 'reset' = 'login';
 
 /**
@@ -410,9 +697,11 @@ function animateCardTransition(
     });
 
     // Déterminer la direction du slide
-    // Login → Logged : slide vers la gauche (sortie -30, entrée +30)
-    // Logged → Login : slide vers la droite (sortie +30, entrée -30)
-    const isForward = from === 'login' && to === 'logged';
+    // Forward: login→logged, login→forgot, forgot→reset
+    // Backward: logged→login, forgot→login, reset→forgot
+    const forwardTransitions = ['login-logged', 'login-forgot', 'forgot-reset'];
+    const transitionKey = `${from}-${to}`;
+    const isForward = forwardTransitions.includes(transitionKey);
     const exitX = isForward ? -30 : 30;
     const enterX = isForward ? 30 : -30;
 
@@ -514,6 +803,7 @@ function hideError(element: HTMLElement | null | undefined): void {
 /**
  * Affiche l'état de succès après connexion
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function showSuccessState(form: HTMLFormElement): void {
   // Masquer le formulaire
   form.style.display = 'none';

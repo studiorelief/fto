@@ -14,9 +14,9 @@
  * - [data-report-detail="back"]       : Bouton retour
  */
 
+import type { ReportResponse } from '../api/types';
 import { isAuthenticated } from '../auth';
 import { getReportById } from './reportsService';
-import type { ReportResponse } from '../api/types';
 
 // ============================================
 // Selectors
@@ -44,12 +44,12 @@ let authListenersInitialized = false;
  * Initialise l'affichage du détail d'un rapport
  */
 export async function initReportDetail(): Promise<void> {
-  console.log('[FTO Report Detail] Initializing...');
+  // console.log('[FTO Report Detail] Initializing...');
 
   // Vérifier si on est sur la bonne page
   const container = document.querySelector(SELECTORS.CONTAINER);
   if (!container) {
-    console.log('[FTO Report Detail] No report detail container found on this page');
+    // console.log('[FTO Report Detail] No report detail container found on this page');
     return;
   }
 
@@ -72,13 +72,13 @@ function initAuthEventListeners(): void {
 
   // Quand l'utilisateur se connecte → charger le rapport
   window.addEventListener('auth:tokens-updated', () => {
-    console.log('[FTO Report Detail] Auth tokens updated, loading report...');
+    // console.log('[FTO Report Detail] Auth tokens updated, loading report...');
     loadReportIfAuthenticated();
   });
 
   // Quand l'utilisateur se déconnecte → afficher erreur
   window.addEventListener('auth:logged-out', () => {
-    console.log('[FTO Report Detail] User logged out');
+    // console.log('[FTO Report Detail] User logged out');
     showError('Connectez-vous pour voir ce rapport');
   });
 }
@@ -89,7 +89,7 @@ function initAuthEventListeners(): void {
 async function loadReportIfAuthenticated(): Promise<void> {
   // Vérifier l'authentification
   if (!isAuthenticated()) {
-    console.log('[FTO Report Detail] User not authenticated');
+    // console.log('[FTO Report Detail] User not authenticated');
     showError('Connectez-vous pour voir ce rapport');
     return;
   }
@@ -102,7 +102,7 @@ async function loadReportIfAuthenticated(): Promise<void> {
     return;
   }
 
-  console.log('[FTO Report Detail] Loading report ID:', reportId);
+  // console.log('[FTO Report Detail] Loading report ID:', reportId);
   hideError();
 
   // Charger le rapport
@@ -169,7 +169,7 @@ async function loadReport(reportId: number): Promise<void> {
     const response = await getReportById(reportId);
 
     if (response.success && response.data) {
-      console.log('[FTO Report Detail] Report loaded:', response.data.name);
+      // console.log('[FTO Report Detail] Report loaded:', response.data.name);
       renderReport(response.data);
     } else {
       console.error('[FTO Report Detail] Error loading report:', response.error);
@@ -189,45 +189,50 @@ async function loadReport(reportId: number): Promise<void> {
 
 /**
  * Affiche les détails du rapport
+ * Supporte plusieurs éléments avec le même attribut
  */
 function renderReport(report: ReportResponse): void {
-  // Titre
-  const nameEl = document.querySelector(SELECTORS.NAME);
-  if (nameEl) {
-    nameEl.textContent = report.name;
-  }
+  // Titre (peut y avoir plusieurs éléments)
+  const nameEls = document.querySelectorAll<HTMLElement>(SELECTORS.NAME);
+  nameEls.forEach((el) => {
+    el.textContent = report.name;
+  });
 
-  // Catégorie
-  const categoryEl = document.querySelector(SELECTORS.CATEGORY);
-  if (categoryEl) {
-    categoryEl.textContent = report.category_name || 'Non catégorisé';
-  }
+  // Catégorie (peut y avoir plusieurs éléments)
+  const categoryEls = document.querySelectorAll<HTMLElement>(SELECTORS.CATEGORY);
+  categoryEls.forEach((el) => {
+    el.textContent = report.category_name || 'Non catégorisé';
+  });
 
-  // Image
-  const imageEl = document.querySelector<HTMLImageElement>(SELECTORS.IMAGE);
-  if (imageEl && report.image_url) {
-    imageEl.src = report.image_url;
-    imageEl.alt = report.name;
-  }
+  // Image (peut y avoir plusieurs éléments)
+  const imageEls = document.querySelectorAll<HTMLImageElement>(SELECTORS.IMAGE);
+  imageEls.forEach((el) => {
+    if (report.image_url) {
+      el.src = report.image_url;
+      el.alt = report.name;
+    }
+  });
 
-  // Description (si présent dans l'API)
-  const descEl = document.querySelector(SELECTORS.DESCRIPTION);
-  if (descEl) {
-    // Note: Le champ description n'est pas dans l'API actuelle
-    // descEl.textContent = report.description || '';
-  }
+  // Description (peut y avoir plusieurs éléments)
+  // Note: Le champ description n'est pas dans l'API actuelle
+  // const descEls = document.querySelectorAll<HTMLElement>(SELECTORS.DESCRIPTION);
+  // descEls.forEach((el) => {
+  //   el.textContent = report.description || '';
+  // });
 
-  // Embed Power BI
-  const embedEl = document.querySelector<HTMLIFrameElement>(SELECTORS.EMBED);
-  if (embedEl && report.report_url) {
-    embedEl.src = report.report_url;
-    embedEl.title = report.name;
-  }
+  // Embed Power BI (peut y avoir plusieurs éléments)
+  const embedEls = document.querySelectorAll<HTMLIFrameElement>(SELECTORS.EMBED);
+  embedEls.forEach((el) => {
+    if (report.embed_url) {
+      el.src = report.embed_url;
+      el.title = report.name;
+    }
+  });
 
   // Mettre à jour le titre de la page
   document.title = `${report.name} | France Tourisme Observation`;
 
-  console.log('[FTO Report Detail] Report rendered');
+  // console.log('[FTO Report Detail] Report rendered');
 }
 
 // ============================================
