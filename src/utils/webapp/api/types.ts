@@ -24,6 +24,9 @@ export interface LoginRequest {
   password: string;
 }
 
+// Alias pour login
+export type UserLogin = LoginRequest;
+
 export interface TokenWithRefresh {
   access_token: string;
   refresh_token: string;

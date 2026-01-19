@@ -29,7 +29,7 @@ export function isProtectedPage(): boolean {
  * Ouvre le popup de login
  */
 export function promptLogin(): void {
-  console.log('[FTO Auth Guard] Opening login popup...');
+  // console.log('[FTO Auth Guard] Opening login popup...');
   openAuthPopup();
 }
 
@@ -83,23 +83,23 @@ export async function authGuard(): Promise<boolean> {
 
   // Vérifier si authentifié
   if (!isAuthenticated()) {
-    console.log('[FTO Auth Guard] Not authenticated, opening login popup');
+    // console.log('[FTO Auth Guard] Not authenticated, opening login popup');
     promptLogin();
     return false;
   }
 
   // Vérifier si le token est expiré
   if (isTokenExpired()) {
-    console.log('[FTO Auth Guard] Token expired, checking session...');
+    // console.log('[FTO Auth Guard] Token expired, checking session...');
     const user = await checkSession();
     if (!user) {
-      console.log('[FTO Auth Guard] Session invalid, opening login popup');
+      // console.log('[FTO Auth Guard] Session invalid, opening login popup');
       promptLogin();
       return false;
     }
   }
 
-  console.log('[FTO Auth Guard] Access granted');
+  // console.log('[FTO Auth Guard] Access granted');
   return true;
 }
 
@@ -113,7 +113,7 @@ export function initAuthGuard(): void {
   // Vérifier périodiquement (toutes les minutes)
   setInterval(async () => {
     if (isProtectedPage() && isTokenExpiringSoon()) {
-      console.log('[FTO Auth Guard] Token expiring soon, refreshing...');
+      // console.log('[FTO Auth Guard] Token expiring soon, refreshing...');
       await checkSession();
     }
   }, 60 * 1000);
@@ -122,7 +122,7 @@ export function initAuthGuard(): void {
   document.addEventListener('visibilitychange', async () => {
     if (document.visibilityState === 'visible' && isProtectedPage()) {
       if (isTokenExpired()) {
-        console.log('[FTO Auth Guard] Tab visible, checking session...');
+        // console.log('[FTO Auth Guard] Tab visible, checking session...');
         const user = await checkSession();
         if (!user) {
           promptLogin();

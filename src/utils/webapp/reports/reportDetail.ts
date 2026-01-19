@@ -44,12 +44,12 @@ let authListenersInitialized = false;
  * Initialise l'affichage du détail d'un rapport
  */
 export async function initReportDetail(): Promise<void> {
-  console.log('[FTO Report Detail] Initializing...');
+  // console.log('[FTO Report Detail] Initializing...');
 
   // Vérifier si on est sur la bonne page
   const container = document.querySelector(SELECTORS.CONTAINER);
   if (!container) {
-    console.log('[FTO Report Detail] No report detail container found on this page');
+    // console.log('[FTO Report Detail] No report detail container found on this page');
     return;
   }
 
@@ -72,13 +72,13 @@ function initAuthEventListeners(): void {
 
   // Quand l'utilisateur se connecte → charger le rapport
   window.addEventListener('auth:tokens-updated', () => {
-    console.log('[FTO Report Detail] Auth tokens updated, loading report...');
+    // console.log('[FTO Report Detail] Auth tokens updated, loading report...');
     loadReportIfAuthenticated();
   });
 
   // Quand l'utilisateur se déconnecte → afficher erreur
   window.addEventListener('auth:logged-out', () => {
-    console.log('[FTO Report Detail] User logged out');
+    // console.log('[FTO Report Detail] User logged out');
     showError('Connectez-vous pour voir ce rapport');
   });
 }
@@ -89,7 +89,7 @@ function initAuthEventListeners(): void {
 async function loadReportIfAuthenticated(): Promise<void> {
   // Vérifier l'authentification
   if (!isAuthenticated()) {
-    console.log('[FTO Report Detail] User not authenticated');
+    // console.log('[FTO Report Detail] User not authenticated');
     showError('Connectez-vous pour voir ce rapport');
     return;
   }
@@ -102,7 +102,7 @@ async function loadReportIfAuthenticated(): Promise<void> {
     return;
   }
 
-  console.log('[FTO Report Detail] Loading report ID:', reportId);
+  // console.log('[FTO Report Detail] Loading report ID:', reportId);
   hideError();
 
   // Charger le rapport
@@ -169,7 +169,7 @@ async function loadReport(reportId: number): Promise<void> {
     const response = await getReportById(reportId);
 
     if (response.success && response.data) {
-      console.log('[FTO Report Detail] Report loaded:', response.data.name);
+      // console.log('[FTO Report Detail] Report loaded:', response.data.name);
       renderReport(response.data);
     } else {
       console.error('[FTO Report Detail] Error loading report:', response.error);
@@ -232,7 +232,7 @@ function renderReport(report: ReportResponse): void {
   // Mettre à jour le titre de la page
   document.title = `${report.name} | France Tourisme Observation`;
 
-  console.log('[FTO Report Detail] Report rendered');
+  // console.log('[FTO Report Detail] Report rendered');
 }
 
 // ============================================

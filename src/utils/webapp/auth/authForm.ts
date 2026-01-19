@@ -61,7 +61,7 @@ const SELECTORS = {
  * Initialise le formulaire d'authentification
  */
 export function initAuthForm(): void {
-  console.log('[FTO Auth] Initializing auth form...');
+  // console.log('[FTO Auth] Initializing auth form...');
 
   // Initialiser le formulaire de login
   initLoginForm();
@@ -81,7 +81,7 @@ export function initAuthForm(): void {
   // Vérifier la session au chargement
   checkSession().then((user) => {
     if (user) {
-      console.log('[FTO Auth] Session restored for:', user.email);
+      // console.log('[FTO Auth] Session restored for:', user.email);
       updateUIBasedOnAuthState();
     }
   });
@@ -124,10 +124,10 @@ function initLoginForm(): void {
   }
 
   if (form) {
-    console.log('[FTO Auth] Form found:', form);
+    // console.log('[FTO Auth] Form found:', form);
     setupLoginForm(form);
   } else {
-    console.warn('[FTO Auth] No login form found on this page');
+    // console.warn('[FTO Auth] No login form found on this page');
   }
 }
 
@@ -160,12 +160,12 @@ function setupLoginForm(form: HTMLFormElement): void {
   // Cacher l'élément d'erreur par défaut
   hideError(errorElement);
 
-  console.log('[FTO Auth] Setting up form with:', {
-    emailInput: !!emailInput,
-    passwordInput: !!passwordInput,
-    submitButton: !!submitButton,
-    errorElement: !!errorElement,
-  });
+  // console.log('[FTO Auth] Setting up form with:', {
+  //   emailInput: !!emailInput,
+  //   passwordInput: !!passwordInput,
+  //   submitButton: !!submitButton,
+  //   errorElement: !!errorElement,
+  // });
 
   // Cacher l'erreur quand l'utilisateur commence à taper
   if (emailInput) {
@@ -180,14 +180,14 @@ function setupLoginForm(form: HTMLFormElement): void {
     e.preventDefault();
     e.stopPropagation();
 
-    console.log('[FTO Auth] Form submitted!');
+    // console.log('[FTO Auth] Form submitted!');
 
     // Récupérer les valeurs
     const email = emailInput?.value?.trim() || '';
     const password = passwordInput?.value || '';
 
     // Ne pas logger les credentials, même partiellement
-    console.log('[FTO Auth] Attempting login for:', email.substring(0, 3) + '***');
+    // console.log('[FTO Auth] Attempting login for:', email.substring(0, 3) + '***');
 
     // Validation basique
     if (!email || !password) {
@@ -325,7 +325,7 @@ function updateShowHideElements(): void {
 function updateUIBasedOnAuthState(): void {
   const isLoggedIn = isAuthenticated();
 
-  console.log('[FTO Auth] Updating UI, isLoggedIn:', isLoggedIn);
+  // console.log('[FTO Auth] Updating UI, isLoggedIn:', isLoggedIn);
 
   // Mettre à jour les éléments show/hide
   updateShowHideElements();

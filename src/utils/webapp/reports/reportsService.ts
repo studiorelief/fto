@@ -44,7 +44,7 @@ export async function getCategories(): Promise<ApiResponse<CategoryResponse[]>> 
 
   const response = await get<CategoryResponse[]>(CATEGORY_ENDPOINTS.LIST, true);
 
-  if (response.success) {
+  if (response.success && response.data) {
     categoriesCache = response.data;
   }
 
@@ -62,7 +62,7 @@ export async function getReports(): Promise<ApiResponse<ReportResponse[]>> {
 
   const response = await get<ReportResponse[]>(REPORT_ENDPOINTS.LIST, true);
 
-  if (response.success) {
+  if (response.success && response.data) {
     reportsCache = response.data;
   }
 
@@ -84,7 +84,7 @@ export async function getFilteredReports(
 ): Promise<ApiResponse<ReportResponse[]>> {
   const response = await getReports();
 
-  if (!response.success) {
+  if (!response.success || !response.data) {
     return response;
   }
 
