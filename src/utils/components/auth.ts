@@ -21,9 +21,8 @@ let _closePopup: (() => void) | null = null;
 export function openAuthPopup(): void {
   if (_openPopup) {
     _openPopup();
-  } else {
-    console.warn('[FTO Auth] Popup not initialized yet');
   }
+  // else: Popup not initialized yet - silently ignore
 }
 
 /**
