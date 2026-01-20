@@ -34,7 +34,7 @@ let reportsCache: ReportResponse[] | null = null;
 // ============================================
 
 /**
- * Récupère toutes les catégories
+ * Récupère toutes les catégories (accessible sans authentification)
  */
 export async function getCategories(): Promise<ApiResponse<CategoryResponse[]>> {
   // Utiliser le cache si disponible
@@ -42,7 +42,7 @@ export async function getCategories(): Promise<ApiResponse<CategoryResponse[]>> 
     return { success: true, data: categoriesCache };
   }
 
-  const response = await get<CategoryResponse[]>(CATEGORY_ENDPOINTS.LIST, true);
+  const response = await get<CategoryResponse[]>(CATEGORY_ENDPOINTS.LIST, false);
 
   if (response.success && response.data) {
     categoriesCache = response.data;
@@ -52,7 +52,8 @@ export async function getCategories(): Promise<ApiResponse<CategoryResponse[]>> 
 }
 
 /**
- * Récupère tous les rapports
+ * Récupère tous les rapports (accessible sans authentification)
+ * Note: Les rapports non publics auront guid et embed_url vides si non connecté
  */
 export async function getReports(): Promise<ApiResponse<ReportResponse[]>> {
   // Utiliser le cache si disponible
@@ -60,7 +61,7 @@ export async function getReports(): Promise<ApiResponse<ReportResponse[]>> {
     return { success: true, data: reportsCache };
   }
 
-  const response = await get<ReportResponse[]>(REPORT_ENDPOINTS.LIST, true);
+  const response = await get<ReportResponse[]>(REPORT_ENDPOINTS.LIST, false);
 
   if (response.success && response.data) {
     reportsCache = response.data;
@@ -70,10 +71,11 @@ export async function getReports(): Promise<ApiResponse<ReportResponse[]>> {
 }
 
 /**
- * Récupère un rapport par son ID
+ * Récupère un rapport par son ID (accessible sans authentification)
+ * Note: Les rapports non publics auront guid et embed_url vides si non connecté
  */
 export async function getReportById(id: number): Promise<ApiResponse<ReportResponse>> {
-  return get<ReportResponse>(REPORT_ENDPOINTS.BY_ID(id), true);
+  return get<ReportResponse>(REPORT_ENDPOINTS.BY_ID(id), false);
 }
 
 /**

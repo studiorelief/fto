@@ -29,6 +29,7 @@ const SELECTORS = {
   IMAGE: '[data-report-detail="image"]',
   DESCRIPTION: '[data-report-detail="description"]',
   EMBED: '[data-report-detail="embed"]',
+  EMBED_LOCKED: '[data-report-detail="embed-locked"]', // Message "Connectez-vous pour voir le rapport"
   LOADING: '[data-report-detail="loading"]',
   ERROR: '[data-report-detail="error"]',
   BACK: '[data-report-detail="back"]',
@@ -53,14 +54,20 @@ export async function initReportDetail(): Promise<void> {
     return;
   }
 
+  // État initial : cacher embed-locked (sera affiché seulement si nécessaire après l'API)
+  const embedLockedEls = document.querySelectorAll<HTMLElement>(SELECTORS.EMBED_LOCKED);
+  embedLockedEls.forEach((el) => {
+    el.style.setProperty('display', 'none', 'important');
+  });
+
   // Initialiser le bouton retour
   initBackButton();
 
   // Écouter les événements d'authentification
   initAuthEventListeners();
 
-  // Charger le rapport si authentifié
-  await loadReportIfAuthenticated();
+  // Charger le rapport (accessible même sans authentification)
+  await loadReport();
 }
 
 /**
@@ -70,30 +77,24 @@ function initAuthEventListeners(): void {
   if (authListenersInitialized) return;
   authListenersInitialized = true;
 
-  // Quand l'utilisateur se connecte → charger le rapport
+  // Quand l'utilisateur se connecte → recharger le rapport (pour avoir l'embed_url)
   window.addEventListener('auth:tokens-updated', () => {
-    // console.log('[FTO Report Detail] Auth tokens updated, loading report...');
-    loadReportIfAuthenticated();
+    // console.log('[FTO Report Detail] Auth tokens updated, reloading report...');
+    loadReport();
   });
 
-  // Quand l'utilisateur se déconnecte → afficher erreur
+  // Quand l'utilisateur se déconnecte → recharger pour mettre à jour (embed_url vide si privé)
   window.addEventListener('auth:logged-out', () => {
-    // console.log('[FTO Report Detail] User logged out');
-    showError('Connectez-vous pour voir ce rapport');
+    // console.log('[FTO Report Detail] User logged out, reloading report...');
+    loadReport();
   });
 }
 
 /**
- * Charge le rapport si l'utilisateur est authentifié
+ * Charge le rapport (accessible même sans authentification)
+ * Les rapports privés auront embed_url vide si non connecté
  */
-async function loadReportIfAuthenticated(): Promise<void> {
-  // Vérifier l'authentification
-  if (!isAuthenticated()) {
-    // console.log('[FTO Report Detail] User not authenticated');
-    showError('Connectez-vous pour voir ce rapport');
-    return;
-  }
-
+async function loadReport(): Promise<void> {
   // Récupérer l'ID du rapport depuis l'URL
   const reportId = getReportIdFromUrl();
   if (!reportId) {
@@ -106,7 +107,7 @@ async function loadReportIfAuthenticated(): Promise<void> {
   hideError();
 
   // Charger le rapport
-  await loadReport(reportId);
+  await fetchAndRenderReport(reportId);
 }
 
 // ============================================
@@ -159,9 +160,9 @@ export function generateReportUrl(report: ReportResponse): string {
 // ============================================
 
 /**
- * Charge et affiche un rapport
+ * Charge et affiche un rapport depuis l'API
  */
-async function loadReport(reportId: number): Promise<void> {
+async function fetchAndRenderReport(reportId: number): Promise<void> {
   showLoading();
   hideError();
 
@@ -222,12 +223,35 @@ function renderReport(report: ReportResponse): void {
 
   // Embed Power BI (peut y avoir plusieurs éléments)
   const embedEls = document.querySelectorAll<HTMLIFrameElement>(SELECTORS.EMBED);
-  embedEls.forEach((el) => {
-    if (report.embed_url) {
-      el.src = report.embed_url;
-      el.title = report.name;
-    }
-  });
+  const embedLockedEls = document.querySelectorAll<HTMLElement>(SELECTORS.EMBED_LOCKED);
+
+  // Logique d'affichage :
+  // - Utilisateur connecté → afficher embed (accès aux rapports privés)
+  // - Rapport public (public: true) → afficher embed
+  // - Rapport privé (public: false) + non connecté → afficher locked
+  const hasEmbedAccess = isAuthenticated() || report.public;
+
+  if (hasEmbedAccess) {
+    // Rapport accessible : afficher l'iframe, masquer le message "locked"
+    embedEls.forEach((el) => {
+      if (report.embed_url) {
+        el.src = report.embed_url;
+        el.title = report.name;
+      }
+      el.style.removeProperty('display');
+    });
+    embedLockedEls.forEach((el) => {
+      el.style.setProperty('display', 'none', 'important');
+    });
+  } else {
+    // Rapport privé + non connecté : masquer l'iframe, afficher le message
+    embedEls.forEach((el) => {
+      el.style.setProperty('display', 'none', 'important');
+    });
+    embedLockedEls.forEach((el) => {
+      el.style.removeProperty('display');
+    });
+  }
 
   // Mettre à jour le titre de la page
   document.title = `${report.name} | France Tourisme Observation`;
