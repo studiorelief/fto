@@ -121,6 +121,8 @@ export interface ReportResponse {
   category_name?: string;
   embed_url?: string;
   image_url?: string;
+  guid?: string; // Power BI report GUID (vide si non connecté et public: false)
+  public: boolean; // true = rapport public, false = réservé aux membres
   active: boolean;
   created_at: string;
   updated_at: string;

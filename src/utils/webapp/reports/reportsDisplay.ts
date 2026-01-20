@@ -31,7 +31,12 @@ declare global {
 import type { CategoryResponse, ReportResponse } from '../api/types';
 import { isAuthenticated } from '../auth';
 import { generateReportUrl } from './reportDetail';
-import { getCategories, getFilteredReports, type ReportsFilters } from './reportsService';
+import {
+  clearAllCache,
+  getCategories,
+  getFilteredReports,
+  type ReportsFilters,
+} from './reportsService';
 
 // ============================================
 // Selectors
@@ -50,7 +55,7 @@ const SELECTORS = {
   FILTER_CATEGORIES: '[data-reports-filter="categories"]', // Checkboxes wrapper
   FILTER_CATEGORY_CHECKBOX: '[data-category]', // Individual checkbox with data-category
   FILTER_CATEGORY_TEMPLATE: '[data-reports-filter="category-item"]', // Template checkbox (sera cloné)
-  FILTER_CATEGORY_LABEL: '[data-category-label]', // Label dans le template
+  FILTER_CATEGORY_LABEL: '[data-reports-filter=""]', // Label dans le template (attribut vide)
   FILTER_SEARCH: '[data-reports-filter="search"]',
   FILTER_CLEAR: '[data-reports-filter="clear"]',
 
@@ -61,6 +66,7 @@ const SELECTORS = {
   REPORT_LINK: '[data-report="link"]',
   REPORT_DATE: '[data-report="date"]',
   REPORT_DESCRIPTION: '[data-report="description"]',
+  REPORT_PRIVATE: '[data-reports="private"]', // Badge "Réservé aux membres"
 } as const;
 
 // ============================================
@@ -110,13 +116,8 @@ export async function initReportsDisplay(): Promise<void> {
   // Observer les changements de visibilité (pour sync avec Finsweet)
   initVisibilityObserver();
 
-  // Charger les données si authentifié
-  if (isAuthenticated()) {
-    await loadAllData();
-  } else {
-    // console.log('[FTO Reports] User not authenticated, waiting for login...');
-    showEmptyState('Connectez-vous pour voir les rapports');
-  }
+  // Charger les données (accessible même sans authentification)
+  await loadAllData();
 }
 
 /**
@@ -142,33 +143,22 @@ function initAuthEventListeners(): void {
   if (authListenersInitialized) return;
   authListenersInitialized = true;
 
-  // Quand l'utilisateur se connecte → refetch les données
+  // Quand l'utilisateur se connecte → vider le cache et refetch (pour avoir les URLs/guids)
   window.addEventListener('auth:tokens-updated', () => {
     // console.log('[FTO Reports] Auth tokens updated, reloading data...');
-    if (isAuthenticated()) {
-      loadAllData();
-    }
+    clearAllCache(); // Vider le cache pour récupérer les données avec auth
+    loadAllData();
   });
 
-  // Quand l'utilisateur se déconnecte → vider la liste
+  // Quand l'utilisateur se déconnecte → vider le cache et refetch (URLs vides pour non-public)
   window.addEventListener('auth:logged-out', () => {
-    // console.log('[FTO Reports] User logged out, clearing reports...');
-    clearReportsList();
-    showEmptyState('Connectez-vous pour voir les rapports');
+    // console.log('[FTO Reports] User logged out, reloading data...');
+    clearAllCache(); // Vider le cache pour récupérer les données sans auth
+    loadAllData();
   });
 }
 
-/**
- * Vide la liste des rapports
- */
-function clearReportsList(): void {
-  const container = document.querySelector(SELECTORS.LIST_CONTAINER);
-  if (!container) return;
-
-  const items = container.querySelectorAll('[data-reports="item-rendered"]');
-  items.forEach((item) => item.remove());
-  updateCount(0);
-}
+// clearReportsList supprimé - les rapports sont désormais accessibles sans authentification
 
 // ============================================
 // Data Loading
@@ -282,8 +272,27 @@ function createReportItem(report: ReportResponse): HTMLElement | null {
 
   const linkEl = item.querySelector<HTMLAnchorElement>(SELECTORS.REPORT_LINK);
   if (linkEl) {
-    // Générer l'URL vers la page de détail : /rapport/slug?id=123
-    linkEl.href = generateReportUrl(report);
+    // Logique de cliquabilité selon auth et statut public
+    const userAuthenticated = isAuthenticated();
+    const isClickable = report.public || userAuthenticated;
+
+    if (isClickable) {
+      // Rapport cliquable : générer l'URL vers la page de détail
+      linkEl.href = generateReportUrl(report);
+      linkEl.style.pointerEvents = '';
+      linkEl.style.cursor = '';
+    } else {
+      // Rapport privé + non connecté : désactiver le lien
+      linkEl.removeAttribute('href');
+      linkEl.style.pointerEvents = 'none';
+      linkEl.style.cursor = 'default';
+    }
+  }
+
+  // Gérer le badge "Réservé aux membres" (visible si public: false)
+  const privateEl = item.querySelector<HTMLElement>(SELECTORS.REPORT_PRIVATE);
+  if (privateEl) {
+    privateEl.style.display = report.public ? 'none' : '';
   }
 
   // Rendre l'élément visible (au cas où le template était caché)
