@@ -9,12 +9,10 @@
  */
 export function initPasswordToggle(): void {
   // Sélectionner tous les wrappers d'icônes avec l'attribut ms-code-password
-  const toggleWrappers = document.querySelectorAll<HTMLElement>(
-    '[ms-code-password="transform"]'
-  );
+  const toggleWrappers = document.querySelectorAll<HTMLElement>('[ms-code-password="transform"]');
 
   if (toggleWrappers.length === 0) {
-    console.warn('Aucun wrapper de toggle de mot de passe trouvé');
+    // console.warn('Aucun wrapper de toggle de mot de passe trouvé');
     return;
   }
 
@@ -22,7 +20,7 @@ export function initPasswordToggle(): void {
     setupPasswordToggle(wrapper);
   });
 
-  console.log(`✅ ${toggleWrappers.length} toggle(s) de mot de passe initialisé(s)`);
+  // console.log(`✅ ${toggleWrappers.length} toggle(s) de mot de passe initialisé(s)`);
 }
 
 /**
@@ -97,9 +95,7 @@ function setPasswordVisibility(
  * Utile après la soumission d'un formulaire
  */
 export function resetPasswordVisibility(): void {
-  const toggleWrappers = document.querySelectorAll<HTMLElement>(
-    '[ms-code-password="transform"]'
-  );
+  const toggleWrappers = document.querySelectorAll<HTMLElement>('[ms-code-password="transform"]');
 
   toggleWrappers.forEach((wrapper) => {
     const container = wrapper.closest('.form_input-relative');
