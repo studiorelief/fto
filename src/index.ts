@@ -22,8 +22,10 @@ import { initReportDetail, initReportsDisplay } from '$utils/webapp/reports';
 window.Webflow ||= [];
 window.Webflow.push(() => {
   /* Global */
-  initMarker();
-  loadAttributesScripts();
+  setTimeout(() => {
+    initMarker();
+    loadAttributesScripts();
+  }, 500);
 
   /* Components */
   heading();

@@ -7007,31 +7007,48 @@
   // src/utils/components/filterMobile.ts
   var isFilterMobileInitialized = false;
   var hubFilterButton = null;
-  var hubSide = null;
+  var hubSides = [];
   var hubIconOpen = null;
   var hubIconClose = null;
+  function getVisibleHubSide() {
+    for (const hubSide of hubSides) {
+      const tabPane = hubSide.closest(".w-tab-pane");
+      if (tabPane) {
+        if (tabPane.classList.contains("w--tab-active")) {
+          return hubSide;
+        }
+        continue;
+      }
+      const style = window.getComputedStyle(hubSide);
+      if (style.display !== "none" && hubSide.offsetParent !== null) {
+        return hubSide;
+      }
+    }
+    return hubSides[0] || null;
+  }
   function filterMobile() {
     if (isFilterMobileInitialized) {
       return;
     }
     hubFilterButton = document.querySelector(".hub_filter-button");
-    hubSide = document.querySelector(".hub_side");
+    hubSides = Array.from(document.querySelectorAll(".hub_side"));
     hubIconOpen = document.querySelector(".hub_filter-icon-open");
     hubIconClose = document.querySelector(".hub_filter-icon-close");
-    if (!hubFilterButton || !hubSide) {
+    if (!hubFilterButton || hubSides.length === 0) {
       return;
     }
     isFilterMobileInitialized = true;
     const mobileMediaQuery = window.matchMedia("(max-width: 991px)");
     let isHubOpen = false;
     function setClosedState(initial = false) {
-      if (!hubSide) return;
-      if (initial) {
-        hubSide.style.transition = "none";
-      } else {
-        hubSide.style.transition = "transform 0.3s ease-out";
-      }
-      hubSide.style.transform = "translateX(100%)";
+      hubSides.forEach((hubSide) => {
+        if (initial) {
+          hubSide.style.transition = "none";
+        } else {
+          hubSide.style.transition = "transform 0.3s ease-out";
+        }
+        hubSide.style.transform = "translateX(100%)";
+      });
       if (hubIconOpen) {
         hubIconOpen.style.display = "flex";
       }
@@ -7041,9 +7058,10 @@
       isHubOpen = false;
     }
     function setOpenState() {
-      if (!hubSide) return;
-      hubSide.style.transition = "transform 0.3s ease-out";
-      hubSide.style.transform = "translateX(0%)";
+      const visibleHubSide = getVisibleHubSide();
+      if (!visibleHubSide) return;
+      visibleHubSide.style.transition = "transform 0.3s ease-out";
+      visibleHubSide.style.transform = "translateX(0%)";
       if (hubIconOpen) {
         hubIconOpen.style.display = "none";
       }
@@ -7069,9 +7087,11 @@
     mobileMediaQuery.addEventListener("change", (e) => {
       if (e.matches) {
         setClosedState(true);
-      } else if (hubSide) {
-        hubSide.style.transform = "";
-        hubSide.style.transition = "";
+      } else {
+        hubSides.forEach((hubSide) => {
+          hubSide.style.transform = "";
+          hubSide.style.transition = "";
+        });
         if (hubIconOpen) {
           hubIconOpen.style.display = "";
         }
@@ -8274,17 +8294,13 @@
 
   // src/utils/webapp/auth/passwordToggle.ts
   function initPasswordToggle() {
-    const toggleWrappers = document.querySelectorAll(
-      '[ms-code-password="transform"]'
-    );
+    const toggleWrappers = document.querySelectorAll('[ms-code-password="transform"]');
     if (toggleWrappers.length === 0) {
-      console.warn("Aucun wrapper de toggle de mot de passe trouv\xE9");
       return;
     }
     toggleWrappers.forEach((wrapper) => {
       setupPasswordToggle(wrapper);
     });
-    console.log(`\u2705 ${toggleWrappers.length} toggle(s) de mot de passe initialis\xE9(s)`);
   }
   function setupPasswordToggle(wrapper) {
     const container = wrapper.closest(".form_input-relative");
@@ -8710,8 +8726,10 @@
     REPORT_LINK: '[data-report="link"]',
     REPORT_DATE: '[data-report="date"]',
     REPORT_DESCRIPTION: '[data-report="description"]',
-    REPORT_PRIVATE: '[data-reports="private"]'
+    REPORT_PRIVATE: '[data-reports="private"]',
     // Badge "Réservé aux membres"
+    REPORT_ACCESS: '[data-report="access"]'
+    // Texte "Publique" ou "Membre FTO"
   };
   var itemTemplate = null;
   var checkboxTemplate = null;
@@ -8834,6 +8852,12 @@
     const privateEl = item.querySelector(SELECTORS4.REPORT_PRIVATE);
     if (privateEl) {
       privateEl.style.display = report.public ? "none" : "";
+    }
+    const accessEl = item.querySelector(SELECTORS4.REPORT_ACCESS);
+    if (accessEl) {
+      const accessText = report.public ? "Publique" : "Membre FTO";
+      accessEl.textContent = accessText;
+      accessEl.setAttribute("fs-list-value", accessText);
     }
     item.style.display = "";
     item.setAttribute("data-reports", "item-rendered");
@@ -9053,8 +9077,10 @@
   // src/index.ts
   window.Webflow ||= [];
   window.Webflow.push(() => {
-    initMarker();
-    loadAttributesScripts();
+    setTimeout(() => {
+      initMarker();
+      loadAttributesScripts();
+    }, 500);
     heading();
     buttonHover();
     filterMobile();

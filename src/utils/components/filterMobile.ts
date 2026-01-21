@@ -1,11 +1,37 @@
 /* Gestion du filtre hub en mobile avec side nav animé */
+/* Supporte plusieurs .hub_side (un par tab) */
 
 let isFilterMobileInitialized = false;
 
 let hubFilterButton: HTMLButtonElement | null = null;
-let hubSide: HTMLElement | null = null;
+let hubSides: HTMLElement[] = [];
 let hubIconOpen: HTMLElement | null = null;
 let hubIconClose: HTMLElement | null = null;
+
+/**
+ * Récupère le .hub_side actuellement visible (dans le tab actif)
+ */
+function getVisibleHubSide(): HTMLElement | null {
+  for (const hubSide of hubSides) {
+    // Méthode 1 : Vérifier si le hub_side est dans un tab Webflow actif
+    const tabPane = hubSide.closest('.w-tab-pane');
+    if (tabPane) {
+      // Webflow ajoute la classe w--tab-active sur le tab pane actif
+      if (tabPane.classList.contains('w--tab-active')) {
+        return hubSide;
+      }
+      continue;
+    }
+
+    // Méthode 2 : Fallback pour les éléments hors tabs - vérifier la visibilité CSS
+    const style = window.getComputedStyle(hubSide);
+    if (style.display !== 'none' && hubSide.offsetParent !== null) {
+      return hubSide;
+    }
+  }
+  // Fallback : retourner le premier si aucun n'est clairement visible
+  return hubSides[0] || null;
+}
 
 export function filterMobile() {
   // Éviter d'initialiser plusieurs fois
@@ -15,11 +41,11 @@ export function filterMobile() {
 
   // Sélection des éléments
   hubFilterButton = document.querySelector('.hub_filter-button') as HTMLButtonElement | null;
-  hubSide = document.querySelector('.hub_side') as HTMLElement | null;
+  hubSides = Array.from(document.querySelectorAll('.hub_side')) as HTMLElement[];
   hubIconOpen = document.querySelector('.hub_filter-icon-open') as HTMLElement | null;
   hubIconClose = document.querySelector('.hub_filter-icon-close') as HTMLElement | null;
 
-  if (!hubFilterButton || !hubSide) {
+  if (!hubFilterButton || hubSides.length === 0) {
     // Éléments nécessaires non trouvés
     return;
   }
@@ -34,16 +60,15 @@ export function filterMobile() {
 
   // État initial : hub fermé
   function setClosedState(initial = false) {
-    if (!hubSide) return;
-
-    // Fermé : translateX 100%
-    if (initial) {
-      // Pas d'animation pour l'état initial
-      hubSide.style.transition = 'none';
-    } else {
-      hubSide.style.transition = 'transform 0.3s ease-out';
-    }
-    hubSide.style.transform = 'translateX(100%)';
+    // Fermer tous les hub_side
+    hubSides.forEach((hubSide) => {
+      if (initial) {
+        hubSide.style.transition = 'none';
+      } else {
+        hubSide.style.transition = 'transform 0.3s ease-out';
+      }
+      hubSide.style.transform = 'translateX(100%)';
+    });
 
     // Icônes
     if (hubIconOpen) {
@@ -57,12 +82,13 @@ export function filterMobile() {
     isHubOpen = false;
   }
 
-  // État ouvert
+  // État ouvert (ouvre uniquement le hub_side visible)
   function setOpenState() {
-    if (!hubSide) return;
+    const visibleHubSide = getVisibleHubSide();
+    if (!visibleHubSide) return;
 
-    hubSide.style.transition = 'transform 0.3s ease-out';
-    hubSide.style.transform = 'translateX(0%)';
+    visibleHubSide.style.transition = 'transform 0.3s ease-out';
+    visibleHubSide.style.transform = 'translateX(0%)';
 
     if (hubIconOpen) {
       hubIconOpen.style.display = 'none';
@@ -100,12 +126,14 @@ export function filterMobile() {
   // Gérer les changements de breakpoint
   mobileMediaQuery.addEventListener('change', (e) => {
     if (e.matches) {
-      // On entre en mobile : fermer le hub sans animation
+      // On entre en mobile : fermer tous les hubs sans animation
       setClosedState(true);
-    } else if (hubSide) {
+    } else {
       // On repasse en desktop : nettoyer les styles inline pour laisser le CSS desktop s'appliquer
-      hubSide.style.transform = '';
-      hubSide.style.transition = '';
+      hubSides.forEach((hubSide) => {
+        hubSide.style.transform = '';
+        hubSide.style.transition = '';
+      });
 
       if (hubIconOpen) {
         hubIconOpen.style.display = '';

@@ -14,6 +14,7 @@
  * - [data-report="category"]   : Catégorie
  * - [data-report="image"]      : Image (src)
  * - [data-report="link"]       : Lien vers le rapport (href)
+ * - [data-report="access"]     : Texte d'accès ("Publique" ou "Membre FTO")
  *
  * Compatible avec Finsweet Attributes V2 :
  * - fs-list-element="wrapper"  : Sur le wrapper
@@ -67,6 +68,7 @@ const SELECTORS = {
   REPORT_DATE: '[data-report="date"]',
   REPORT_DESCRIPTION: '[data-report="description"]',
   REPORT_PRIVATE: '[data-reports="private"]', // Badge "Réservé aux membres"
+  REPORT_ACCESS: '[data-report="access"]', // Texte "Publique" ou "Membre FTO"
 } as const;
 
 // ============================================
@@ -293,6 +295,14 @@ function createReportItem(report: ReportResponse): HTMLElement | null {
   const privateEl = item.querySelector<HTMLElement>(SELECTORS.REPORT_PRIVATE);
   if (privateEl) {
     privateEl.style.display = report.public ? 'none' : '';
+  }
+
+  // Afficher le texte d'accès (Publique ou Membre FTO)
+  const accessEl = item.querySelector<HTMLElement>(SELECTORS.REPORT_ACCESS);
+  if (accessEl) {
+    const accessText = report.public ? 'Publique' : 'Membre FTO';
+    accessEl.textContent = accessText;
+    accessEl.setAttribute('fs-list-value', accessText);
   }
 
   // Rendre l'élément visible (au cas où le template était caché)
