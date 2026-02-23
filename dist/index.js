@@ -8728,8 +8728,12 @@
     REPORT_DESCRIPTION: '[data-report="description"]',
     REPORT_PRIVATE: '[data-reports="private"]',
     // Badge "Réservé aux membres"
-    REPORT_ACCESS: '[data-report="access"]'
+    REPORT_ACCESS: '[data-report="access"]',
     // Texte "Publique" ou "Membre FTO"
+    REPORT_ACCESSIBLE: '[data-reports="accessible"]',
+    // Visible si accessible
+    REPORT_NOT_ACCESSIBLE: '[data-reports="not-accessible"]'
+    // Visible si non accessible
   };
   var itemTemplate = null;
   var checkboxTemplate = null;
@@ -8835,10 +8839,10 @@
       imageEl.src = report.image_url;
       imageEl.alt = report.name;
     }
+    const userAuthenticated = isAuthenticated();
+    const isClickable = report.public || userAuthenticated;
     const linkEl = item.querySelector(SELECTORS4.REPORT_LINK);
     if (linkEl) {
-      const userAuthenticated = isAuthenticated();
-      const isClickable = report.public || userAuthenticated;
       if (isClickable) {
         linkEl.href = generateReportUrl(report);
         linkEl.style.pointerEvents = "";
@@ -8853,6 +8857,12 @@
     if (privateEl) {
       privateEl.style.display = report.public ? "none" : "";
     }
+    item.querySelectorAll(SELECTORS4.REPORT_ACCESSIBLE).forEach((el) => {
+      el.style.display = isClickable ? "" : "none";
+    });
+    item.querySelectorAll(SELECTORS4.REPORT_NOT_ACCESSIBLE).forEach((el) => {
+      el.style.display = isClickable ? "none" : "";
+    });
     const accessEl = item.querySelector(SELECTORS4.REPORT_ACCESS);
     if (accessEl) {
       const accessText = report.public ? "Publique" : "Membre FTO";

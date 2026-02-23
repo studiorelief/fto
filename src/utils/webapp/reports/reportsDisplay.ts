@@ -15,6 +15,8 @@
  * - [data-report="image"]      : Image (src)
  * - [data-report="link"]       : Lien vers le rapport (href)
  * - [data-report="access"]     : Texte d'accès ("Publique" ou "Membre FTO")
+ * - [data-reports="accessible"]     : Visible si le rapport est accessible (public ou connecté)
+ * - [data-reports="not-accessible"] : Visible si le rapport n'est pas accessible (privé + non connecté)
  *
  * Compatible avec Finsweet Attributes V2 :
  * - fs-list-element="wrapper"  : Sur le wrapper
@@ -69,6 +71,8 @@ const SELECTORS = {
   REPORT_DESCRIPTION: '[data-report="description"]',
   REPORT_PRIVATE: '[data-reports="private"]', // Badge "Réservé aux membres"
   REPORT_ACCESS: '[data-report="access"]', // Texte "Publique" ou "Membre FTO"
+  REPORT_ACCESSIBLE: '[data-reports="accessible"]', // Visible si accessible
+  REPORT_NOT_ACCESSIBLE: '[data-reports="not-accessible"]', // Visible si non accessible
 } as const;
 
 // ============================================
@@ -272,12 +276,11 @@ function createReportItem(report: ReportResponse): HTMLElement | null {
     imageEl.alt = report.name;
   }
 
+  const userAuthenticated = isAuthenticated();
+  const isClickable = report.public || userAuthenticated;
+
   const linkEl = item.querySelector<HTMLAnchorElement>(SELECTORS.REPORT_LINK);
   if (linkEl) {
-    // Logique de cliquabilité selon auth et statut public
-    const userAuthenticated = isAuthenticated();
-    const isClickable = report.public || userAuthenticated;
-
     if (isClickable) {
       // Rapport cliquable : générer l'URL vers la page de détail
       linkEl.href = generateReportUrl(report);
@@ -296,6 +299,14 @@ function createReportItem(report: ReportResponse): HTMLElement | null {
   if (privateEl) {
     privateEl.style.display = report.public ? 'none' : '';
   }
+
+  // Afficher/masquer selon l'accessibilité du rapport
+  item.querySelectorAll<HTMLElement>(SELECTORS.REPORT_ACCESSIBLE).forEach((el) => {
+    el.style.display = isClickable ? '' : 'none';
+  });
+  item.querySelectorAll<HTMLElement>(SELECTORS.REPORT_NOT_ACCESSIBLE).forEach((el) => {
+    el.style.display = isClickable ? 'none' : '';
+  });
 
   // Afficher le texte d'accès (Publique ou Membre FTO)
   const accessEl = item.querySelector<HTMLElement>(SELECTORS.REPORT_ACCESS);
