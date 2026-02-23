@@ -477,9 +477,6 @@ function populateCategoryCheckboxes(): void {
         }
       }
 
-      // Retirer l'attribut template pour éviter les doublons
-      checkboxItem.removeAttribute('data-reports-filter');
-
       wrapper.appendChild(checkboxItem);
     }
   });

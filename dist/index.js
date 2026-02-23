@@ -8968,7 +8968,6 @@
             labelText.textContent = cat.name;
           }
         }
-        checkboxItem.removeAttribute("data-reports-filter");
         wrapper.appendChild(checkboxItem);
       }
     });
