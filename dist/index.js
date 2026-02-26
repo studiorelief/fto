@@ -7605,7 +7605,9 @@
   };
   var REPORT_ENDPOINTS = {
     LIST: "/reports",
-    BY_ID: (id) => `/reports/${id}`
+    BY_ID: (id) => `/reports/${id}`,
+    EMBED_TOKEN: (id) => `/reports/${id}/embedtoken`,
+    EMBED_CONFIG: (id) => `/reports/${id}/embedconfig`
   };
   var buildUrl = (endpoint) => {
     return `${API_BASE_URL}${endpoint}`;
@@ -8519,6 +8521,9 @@
     }
     return { success: true, data: reports };
   }
+  async function getReportEmbedConfig(id) {
+    return get(REPORT_ENDPOINTS.EMBED_CONFIG(id));
+  }
   function clearReportsCache() {
     reportsCache = null;
   }
@@ -8531,6 +8536,7 @@
   }
 
   // src/utils/webapp/reports/reportDetail.ts
+  var POWERBI_SDK_URL = "https://cdn.jsdelivr.net/npm/powerbi-client@2.23.1/dist/powerbi.min.js";
   var SELECTORS3 = {
     CONTAINER: '[data-report-detail="container"]',
     NAME: '[data-report-detail="name"]',
@@ -8539,17 +8545,18 @@
     DESCRIPTION: '[data-report-detail="description"]',
     EMBED: '[data-report-detail="embed"]',
     EMBED_LOCKED: '[data-report-detail="embed-locked"]',
-    // Message "Connectez-vous pour voir le rapport"
     LOADING: '[data-report-detail="loading"]',
     ERROR: '[data-report-detail="error"]',
     BACK: '[data-report-detail="back"]'
   };
   var authListenersInitialized = false;
+  var sdkLoaded = false;
+  var sdkLoading = false;
+  var currentReport = null;
+  var currentReportId = null;
   async function initReportDetail() {
     const container = document.querySelector(SELECTORS3.CONTAINER);
-    if (!container) {
-      return;
-    }
+    if (!container) return;
     const embedLockedEls = document.querySelectorAll(SELECTORS3.EMBED_LOCKED);
     embedLockedEls.forEach((el) => {
       el.style.setProperty("display", "none", "important");
@@ -8565,6 +8572,16 @@
       loadReport();
     });
     window.addEventListener("auth:logged-out", () => {
+      if (currentReport) {
+        const embedEl = document.querySelector(SELECTORS3.EMBED);
+        if (embedEl) {
+          try {
+            window.powerbi?.reset(embedEl);
+          } catch {
+          }
+        }
+        currentReport = null;
+      }
       loadReport();
     });
   }
@@ -8575,6 +8592,7 @@
       showError2("Rapport non trouv\xE9");
       return;
     }
+    currentReportId = reportId;
     hideError2();
     await fetchAndRenderReport(reportId);
   }
@@ -8591,6 +8609,61 @@
   }
   function generateReportUrl(report) {
     return `/rapport?id=${report.id}`;
+  }
+  function loadPowerBiSdk() {
+    if (sdkLoaded) return Promise.resolve();
+    if (sdkLoading) {
+      return new Promise((resolve) => {
+        const check = setInterval(() => {
+          if (sdkLoaded) {
+            clearInterval(check);
+            resolve();
+          }
+        }, 100);
+      });
+    }
+    sdkLoading = true;
+    return new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = POWERBI_SDK_URL;
+      script.onload = () => {
+        sdkLoaded = true;
+        sdkLoading = false;
+        resolve();
+      };
+      script.onerror = () => {
+        sdkLoading = false;
+        reject(new Error("Impossible de charger le SDK Power BI"));
+      };
+      document.head.appendChild(script);
+    });
+  }
+  async function embedPowerBiReport(container, config3) {
+    await loadPowerBiSdk();
+    if (!window.powerbi) {
+      console.error("[FTO Report Detail] Power BI SDK not available");
+      return;
+    }
+    const sdkConfig = {
+      type: config3.type,
+      id: config3.id,
+      embedUrl: config3.embedUrl,
+      accessToken: config3.accessToken,
+      tokenType: 1,
+      // models.TokenType.Embed (CDN expose models sur window['powerbi-client'], pas window.powerbi)
+      settings: config3.settings || {
+        navContentPaneEnabled: false,
+        filterPaneEnabled: false
+      }
+    };
+    currentReport = window.powerbi.embed(container, sdkConfig);
+    currentReport.on("tokenExpired", async () => {
+      if (!currentReportId) return;
+      const refreshResponse = await getReportEmbedConfig(currentReportId);
+      if (refreshResponse.success && refreshResponse.data) {
+        await currentReport?.setAccessToken(refreshResponse.data.accessToken);
+      }
+    });
   }
   async function fetchAndRenderReport(reportId) {
     showLoading();
@@ -8611,16 +8684,13 @@
     }
   }
   function renderReport(report) {
-    const nameEls = document.querySelectorAll(SELECTORS3.NAME);
-    nameEls.forEach((el) => {
+    document.querySelectorAll(SELECTORS3.NAME).forEach((el) => {
       el.textContent = report.name;
     });
-    const categoryEls = document.querySelectorAll(SELECTORS3.CATEGORY);
-    categoryEls.forEach((el) => {
+    document.querySelectorAll(SELECTORS3.CATEGORY).forEach((el) => {
       el.textContent = report.category_name || "Non cat\xE9goris\xE9";
     });
-    const imageEls = document.querySelectorAll(SELECTORS3.IMAGE);
-    imageEls.forEach((el) => {
+    document.querySelectorAll(SELECTORS3.IMAGE).forEach((el) => {
       if (report.image_url) {
         el.src = report.image_url;
         el.alt = report.name;
@@ -8631,15 +8701,15 @@
     const hasEmbedAccess = isAuthenticated() || report.public;
     if (hasEmbedAccess) {
       embedEls.forEach((el) => {
-        if (report.embed_url) {
-          el.src = report.embed_url;
-          el.title = report.name;
-        }
         el.style.removeProperty("display");
       });
       embedLockedEls.forEach((el) => {
         el.style.setProperty("display", "none", "important");
       });
+      const embedContainer = document.querySelector(SELECTORS3.EMBED);
+      if (embedContainer) {
+        loadAndEmbedReport(embedContainer, report.id);
+      }
     } else {
       embedEls.forEach((el) => {
         el.style.setProperty("display", "none", "important");
@@ -8649,6 +8719,18 @@
       });
     }
     document.title = `${report.name} | France Tourisme Observation`;
+  }
+  async function loadAndEmbedReport(container, reportId) {
+    try {
+      const configResponse = await getReportEmbedConfig(reportId);
+      if (configResponse.success && configResponse.data) {
+        await embedPowerBiReport(container, configResponse.data);
+      } else {
+        console.error("[FTO Report Detail] Error loading embed config:", configResponse.error);
+      }
+    } catch (error) {
+      console.error("[FTO Report Detail] Exception loading embed:", error);
+    }
   }
   function initBackButton() {
     const backBtns = document.querySelectorAll(SELECTORS3.BACK);
@@ -8660,28 +8742,21 @@
     });
   }
   function showLoading() {
-    const loadingEls = document.querySelectorAll(SELECTORS3.LOADING);
-    loadingEls.forEach((el) => {
+    document.querySelectorAll(SELECTORS3.LOADING).forEach((el) => {
       el.style.setProperty("display", "block", "important");
     });
     const container = document.querySelector(SELECTORS3.CONTAINER);
-    if (container) {
-      container.style.opacity = "0.5";
-    }
+    if (container) container.style.opacity = "0.5";
   }
   function hideLoading() {
-    const loadingEls = document.querySelectorAll(SELECTORS3.LOADING);
-    loadingEls.forEach((el) => {
+    document.querySelectorAll(SELECTORS3.LOADING).forEach((el) => {
       el.style.setProperty("display", "none", "important");
     });
     const container = document.querySelector(SELECTORS3.CONTAINER);
-    if (container) {
-      container.style.opacity = "1";
-    }
+    if (container) container.style.opacity = "1";
   }
   function showError2(message) {
-    const errorEls = document.querySelectorAll(SELECTORS3.ERROR);
-    errorEls.forEach((el) => {
+    document.querySelectorAll(SELECTORS3.ERROR).forEach((el) => {
       const textEl = el.querySelector("p, span, div");
       if (textEl) {
         textEl.textContent = message;
@@ -8692,8 +8767,7 @@
     });
   }
   function hideError2() {
-    const errorEls = document.querySelectorAll(SELECTORS3.ERROR);
-    errorEls.forEach((el) => {
+    document.querySelectorAll(SELECTORS3.ERROR).forEach((el) => {
       el.style.setProperty("display", "none", "important");
     });
   }

@@ -115,24 +115,21 @@ export interface CategoryUpdate {
 export interface ReportResponse {
   id: number;
   name: string;
-  slug?: string;
   description?: string;
   category_id: number;
   category_name?: string;
-  embed_url?: string;
+  powerbi_report_guid?: string; // GUID du rapport dans le service Power BI (vide si non connecté et public: false)
   image_url?: string;
-  guid?: string; // Power BI report GUID (vide si non connecté et public: false)
   public: boolean; // true = rapport public, false = réservé aux membres
   active: boolean;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface ReportCreate {
   name: string;
   description?: string;
   category_id: number;
-  embed_url?: string;
   image_url?: string;
   active?: boolean;
 }
@@ -141,9 +138,34 @@ export interface ReportUpdate {
   name?: string;
   description?: string;
   category_id?: number;
-  embed_url?: string;
   image_url?: string;
   active?: boolean;
+}
+
+// ============================================
+// Power BI Embed
+// ============================================
+
+export interface EmbedTokenResponse {
+  token: string;
+  tokenId?: string;
+  expiration?: string;
+}
+
+/**
+ * Réponse de GET /reports/{id}/embedconfig
+ * Objet JSON complet à passer au SDK Power BI pour l'incorporation
+ */
+export interface EmbedConfigResponse {
+  type: string;           // 'report'
+  id: string;             // Power BI report GUID
+  embedUrl: string;       // URL d'embed Power BI complète
+  accessToken: string;    // Embed token JWT
+  tokenType: string;      // 'Embed'
+  settings?: {
+    navContentPaneEnabled?: boolean;
+    filterPaneEnabled?: boolean;
+  };
 }
 
 // ============================================
