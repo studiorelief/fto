@@ -5,7 +5,7 @@
 
 import { get } from '../api/client';
 import { CATEGORY_ENDPOINTS, REPORT_ENDPOINTS } from '../api/endpoints';
-import type { ApiResponse, CategoryResponse, ReportResponse } from '../api/types';
+import type { ApiResponse, CategoryResponse, EmbedConfigResponse, ReportResponse } from '../api/types';
 
 // ============================================
 // Types
@@ -53,7 +53,7 @@ export async function getCategories(): Promise<ApiResponse<CategoryResponse[]>> 
 
 /**
  * Récupère tous les rapports (accessible sans authentification)
- * Note: Les rapports non publics auront guid et embed_url vides si non connecté
+ * Note: Les rapports non publics auront powerbi_report_guid vide si non connecté
  */
 export async function getReports(): Promise<ApiResponse<ReportResponse[]>> {
   // Utiliser le cache si disponible
@@ -72,7 +72,7 @@ export async function getReports(): Promise<ApiResponse<ReportResponse[]>> {
 
 /**
  * Récupère un rapport par son ID (accessible sans authentification)
- * Note: Les rapports non publics auront guid et embed_url vides si non connecté
+ * Note: Les rapports non publics auront powerbi_report_guid vide si non connecté
  */
 export async function getReportById(id: number): Promise<ApiResponse<ReportResponse>> {
   return get<ReportResponse>(REPORT_ENDPOINTS.BY_ID(id), false);
@@ -120,6 +120,14 @@ export async function getFilteredReports(
   }
 
   return { success: true, data: reports };
+}
+
+/**
+ * Récupère la config d'embed Power BI pour un rapport (requiert authentification)
+ * Retourne l'objet JSON complet à passer au SDK Power BI
+ */
+export async function getReportEmbedConfig(id: number): Promise<ApiResponse<EmbedConfigResponse>> {
+  return get<EmbedConfigResponse>(REPORT_ENDPOINTS.EMBED_CONFIG(id));
 }
 
 /**

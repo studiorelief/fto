@@ -38,6 +38,8 @@ export const CATEGORY_ENDPOINTS = {
 export const REPORT_ENDPOINTS = {
   LIST: '/reports',
   BY_ID: (id: number) => `/reports/${id}`,
+  EMBED_TOKEN: (id: number) => `/reports/${id}/embedtoken`,
+  EMBED_CONFIG: (id: number) => `/reports/${id}/embedconfig`,
 } as const;
 
 // Endpoints entreprises (admin)

@@ -140,11 +140,14 @@ export function post<T>(
 
 /**
  * Effectue une requête PUT
- * NOTE: Actuellement désactivé selon les instructions (ne pas toucher PUT/DELETE)
  */
-// export function put<T>(endpoint: string, body?: unknown, requiresAuth = true): Promise<ApiResponse<T>> {
-//   return apiRequest<T>(endpoint, { method: 'PUT', body, requiresAuth });
-// }
+export function put<T>(
+  endpoint: string,
+  body?: unknown,
+  requiresAuth = true
+): Promise<ApiResponse<T>> {
+  return apiRequest<T>(endpoint, { method: 'PUT', body, requiresAuth });
+}
 
 /**
  * Effectue une requête DELETE
