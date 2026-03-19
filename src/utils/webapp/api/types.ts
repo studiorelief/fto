@@ -157,11 +157,11 @@ export interface EmbedTokenResponse {
  * Objet JSON complet à passer au SDK Power BI pour l'incorporation
  */
 export interface EmbedConfigResponse {
-  type: string;           // 'report'
-  id: string;             // Power BI report GUID
-  embedUrl: string;       // URL d'embed Power BI complète
-  accessToken: string;    // Embed token JWT
-  tokenType: string;      // 'Embed'
+  type: string; // 'report'
+  id: string; // Power BI report GUID
+  embedUrl: string; // URL d'embed Power BI complète
+  accessToken: string; // Embed token JWT
+  tokenType: string; // 'Embed'
   settings?: {
     navContentPaneEnabled?: boolean;
     filterPaneEnabled?: boolean;
