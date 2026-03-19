@@ -3,15 +3,8 @@
  * France Tourisme Observation API
  */
 
-// Détection de l'environnement
-const isDev = window.location.hostname === 'localhost';
-
 // Base URL de l'API
-// - En dev (localhost) : utilise le proxy local (certificat auto-signé non supporté par les navigateurs)
-// - En prod : URL finale avec vrai certificat SSL (à configurer quand dispo)
-export const API_BASE_URL = isDev
-  ? 'http://localhost:4000' // Proxy local vers https://91.121.59.49:10001
-  : 'https://91.121.59.49:10001'; // TODO: Remplacer quand certificat Let's Encrypt sera en place
+export const API_BASE_URL = 'https://fto.api.aosis.net:9090';
 
 // Endpoints d'authentification
 export const AUTH_ENDPOINTS = {

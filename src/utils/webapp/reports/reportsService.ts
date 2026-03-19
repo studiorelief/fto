@@ -5,7 +5,12 @@
 
 import { get } from '../api/client';
 import { CATEGORY_ENDPOINTS, REPORT_ENDPOINTS } from '../api/endpoints';
-import type { ApiResponse, CategoryResponse, EmbedConfigResponse, ReportResponse } from '../api/types';
+import type {
+  ApiResponse,
+  CategoryResponse,
+  EmbedConfigResponse,
+  ReportResponse,
+} from '../api/types';
 
 // ============================================
 // Types
