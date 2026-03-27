@@ -18,9 +18,11 @@
  * - [data-report-detail="back"]       : Bouton retour
  */
 
+import gsap from 'gsap';
+
 import type { EmbedConfigResponse, ReportResponse } from '../api/types';
 import { isAuthenticated } from '../auth';
-import { getReportById, getReportEmbedConfig } from './reportsService';
+import { getCategories, getReportById, getReportEmbedConfig } from './reportsService';
 
 // ============================================
 // Power BI SDK types (chargé dynamiquement)
@@ -51,8 +53,10 @@ const SELECTORS = {
   NAME: '[data-report-detail="name"]',
   CATEGORY: '[data-report-detail="category"]',
   IMAGE: '[data-report-detail="image"]',
+  CATEGORY_ICON: '[data-report-detail="category-icon"]',
   DESCRIPTION: '[data-report-detail="description"]',
-  EMBED: '[data-report-detail="embed"]',
+  EMBED: '[data-report-detail="embed-container"]',
+  EMBED_SHIMMER: '[data-report-detail="embed-shimmer"]',
   EMBED_LOCKED: '[data-report-detail="embed-locked"]',
   LOADING: '[data-report-detail="loading"]',
   ERROR: '[data-report-detail="error"]',
@@ -80,7 +84,13 @@ export async function initReportDetail(): Promise<void> {
   const container = document.querySelector(SELECTORS.CONTAINER);
   if (!container) return;
 
-  // État initial : cacher embed-locked
+  // État initial : masquer les éléments data-report-detail (sauf shimmer) avant le load
+  const detailEls = document.querySelectorAll<HTMLElement>(
+    '[data-report-detail]:not([data-report-detail="embed-shimmer"])'
+  );
+  gsap.set(detailEls, { opacity: 0 });
+
+  // Cacher embed-locked
   const embedLockedEls = document.querySelectorAll<HTMLElement>(SELECTORS.EMBED_LOCKED);
   embedLockedEls.forEach((el) => {
     el.style.setProperty('display', 'none', 'important');
@@ -251,6 +261,22 @@ async function embedPowerBiReport(
   // Embarquer le rapport
   currentReport = window.powerbi.embed(container, sdkConfig);
 
+  // Ajuster l'iframe injectée par le SDK
+  const iframe = container.querySelector('iframe');
+  if (iframe) {
+    iframe.style.marginLeft = '-2px';
+    iframe.style.marginTop = '-2px';
+    iframe.style.width = 'calc(100% + 4px)';
+    iframe.style.height = 'calc(100% + 4px)';
+  }
+
+  // Masquer le shimmer quand le rapport est rendu
+  currentReport.on('rendered', () => {
+    document.querySelectorAll<HTMLElement>(SELECTORS.EMBED_SHIMMER).forEach((el) => {
+      el.style.setProperty('display', 'none', 'important');
+    });
+  });
+
   // Gérer le renouvellement de token (expiration à 1h)
   currentReport.on('tokenExpired', async () => {
     if (!currentReportId) return;
@@ -297,6 +323,12 @@ async function fetchAndRenderReport(reportId: number): Promise<void> {
  * Affiche les détails du rapport
  */
 function renderReport(report: ReportResponse): void {
+  // Fade-in des éléments data-report-detail (sauf shimmer)
+  const detailEls = document.querySelectorAll<HTMLElement>(
+    '[data-report-detail]:not([data-report-detail="embed-shimmer"])'
+  );
+  gsap.to(detailEls, { opacity: 1, duration: 0.4, ease: 'power2.out' });
+
   // Titre
   document.querySelectorAll<HTMLElement>(SELECTORS.NAME).forEach((el) => {
     el.textContent = report.name;
@@ -305,6 +337,21 @@ function renderReport(report: ReportResponse): void {
   // Catégorie
   document.querySelectorAll<HTMLElement>(SELECTORS.CATEGORY).forEach((el) => {
     el.textContent = report.category_name || 'Non catégorisé';
+  });
+
+  // Icône de la catégorie (masquer si null)
+  getCategories().then((response) => {
+    if (!response.success || !response.data) return;
+    const category = response.data.find((c) => c.id === report.category_id);
+    document.querySelectorAll<HTMLImageElement>(SELECTORS.CATEGORY_ICON).forEach((el) => {
+      if (category?.image_url) {
+        el.src = category.image_url;
+        el.alt = category.name;
+        el.style.display = '';
+      } else {
+        el.style.display = 'none';
+      }
+    });
   });
 
   // Image

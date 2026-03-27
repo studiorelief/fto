@@ -18,18 +18,10 @@
  * - [data-reports="accessible"]     : Visible si le rapport est accessible (public ou connecté)
  * - [data-reports="not-accessible"] : Visible si le rapport n'est pas accessible (privé + non connecté)
  *
- * Compatible avec Finsweet Attributes V2 :
- * - fs-list-element="wrapper"  : Sur le wrapper
- * - fs-list-element="list"     : Sur data-reports="list"
- * - fs-list-element="item"     : Sur data-reports="item"
+ * Filtres accès (checkboxes Webflow) :
+ * - [data-reports-filter="access"] input[data-access="Publique"]
+ * - [data-reports-filter="access"] input[data-access="Membre FTO"]
  */
-
-// Déclaration pour Finsweet Attributes
-declare global {
-  interface Window {
-    FsAttributes?: unknown;
-  }
-}
 
 import type { CategoryResponse, ReportResponse } from '../api/types';
 import { isAuthenticated } from '../auth';
@@ -59,6 +51,10 @@ const SELECTORS = {
   FILTER_CATEGORY_CHECKBOX: '[data-category]', // Individual checkbox with data-category
   FILTER_CATEGORY_TEMPLATE: '[data-reports-filter="category-item"]', // Template checkbox (sera cloné)
   FILTER_CATEGORY_LABEL: '[data-reports-filter=""]', // Label dans le template (attribut vide)
+  FILTER_ACCESS: '[data-reports-filter="access"]', // Wrapper checkboxes accès
+  FILTER_ACCESS_CHECKBOX: '[data-access]', // Individual checkbox with data-access
+  FILTER_ACCESS_EMPTY: '[data-access="empty"]', // Message "aucun résultat" pour ce filtre
+  FILTER_ACCESS_CLEAR: '[data-access="clear"]', // Bouton reset filtre accès
   FILTER_SEARCH: '[data-reports-filter="search"]',
   FILTER_CLEAR: '[data-reports-filter="clear"]',
 
@@ -68,6 +64,8 @@ const SELECTORS = {
   REPORT_IMAGE: '[data-report="image"]',
   REPORT_LINK: '[data-report="link"]',
   REPORT_DATE: '[data-report="date"]',
+  REPORT_DATE_WRAPPER: '[data-report="date-wrapper"]',
+  REPORT_CATEGORY_ICON: '[data-report="category-icon"]',
   REPORT_DESCRIPTION: '[data-report="description"]',
   REPORT_PRIVATE: '[data-reports="private"]', // Badge "Réservé aux membres"
   REPORT_ACCESS: '[data-report="access"]', // Texte "Publique" ou "Membre FTO"
@@ -83,7 +81,9 @@ let itemTemplate: HTMLElement | null = null;
 let checkboxTemplate: HTMLElement | null = null; // Template pour les checkboxes catégories
 let currentFilters: ReportsFilters = { active: true };
 let selectedCategoryNames: string[] = []; // Pour les checkboxes multichoix
+let selectedAccessTypes: string[] = []; // Pour les checkboxes accès (Publique / Membre FTO)
 let categories: CategoryResponse[] = [];
+let allReports: ReportResponse[] = [];
 
 // ============================================
 // Initialization
@@ -93,21 +93,15 @@ let categories: CategoryResponse[] = [];
  * Initialise l'affichage des rapports
  */
 export async function initReportsDisplay(): Promise<void> {
-  // console.log('[FTO Reports] Initializing reports display...');
-
   // Vérifier si on est sur la bonne page
   const listContainer = document.querySelector(SELECTORS.LIST_CONTAINER);
-  if (!listContainer) {
-    // console.log('[FTO Reports] No reports list found on this page');
-    return;
-  }
+  if (!listContainer) return;
 
   // Sauvegarder le template (une seule fois)
   if (!itemTemplate) {
     const template = listContainer.querySelector<HTMLElement>(SELECTORS.ITEM_TEMPLATE);
     if (template) {
       itemTemplate = template.cloneNode(true) as HTMLElement;
-      // Cacher le template original (ne pas le supprimer pour compatibilité Finsweet)
       template.style.display = 'none';
       template.setAttribute('data-reports', 'template');
     }
@@ -119,9 +113,6 @@ export async function initReportsDisplay(): Promise<void> {
   // Écouter les événements d'authentification pour refetch
   initAuthEventListeners();
 
-  // Observer les changements de visibilité (pour sync avec Finsweet)
-  initVisibilityObserver();
-
   // Charger les données (accessible même sans authentification)
   await loadAllData();
 }
@@ -130,7 +121,6 @@ export async function initReportsDisplay(): Promise<void> {
  * Charge toutes les données (catégories + rapports)
  */
 async function loadAllData(): Promise<void> {
-  // console.log('[FTO Reports] Loading all data...');
   hideEmptyState();
 
   // Charger les catégories d'abord
@@ -151,20 +141,16 @@ function initAuthEventListeners(): void {
 
   // Quand l'utilisateur se connecte → vider le cache et refetch (pour avoir les URLs/guids)
   window.addEventListener('auth:tokens-updated', () => {
-    // console.log('[FTO Reports] Auth tokens updated, reloading data...');
-    clearAllCache(); // Vider le cache pour récupérer les données avec auth
+    clearAllCache();
     loadAllData();
   });
 
   // Quand l'utilisateur se déconnecte → vider le cache et refetch (URLs vides pour non-public)
   window.addEventListener('auth:logged-out', () => {
-    // console.log('[FTO Reports] User logged out, reloading data...');
-    clearAllCache(); // Vider le cache pour récupérer les données sans auth
+    clearAllCache();
     loadAllData();
   });
 }
-
-// clearReportsList supprimé - les rapports sont désormais accessibles sans authentification
 
 // ============================================
 // Data Loading
@@ -177,8 +163,7 @@ async function loadCategories(): Promise<void> {
   const response = await getCategories();
   if (response.success && response.data) {
     categories = response.data;
-    populateCategoryFilter(); // Pour les selects
-    populateCategoryCheckboxes(); // Pour les checkboxes
+    populateCategoryFilter();
   }
 }
 
@@ -192,20 +177,35 @@ async function loadReports(): Promise<void> {
     categoryNames: selectedCategoryNames.length > 0 ? selectedCategoryNames : undefined,
   };
 
-  // console.log('[FTO Reports] Loading reports with filters:', filtersToApply);
-
-  // Afficher l'état de chargement
   showLoading();
 
   try {
     const response = await getFilteredReports(filtersToApply);
 
     if (response.success && response.data) {
-      const reports = response.data;
-      // console.log('[FTO Reports] Loaded', reports.length, 'reports');
+      let reports = response.data;
+
+      // Stocker tous les rapports (non filtrés) pour les checkboxes catégories
+      if (allReports.length === 0) {
+        allReports = reports;
+        populateCategoryCheckboxes();
+      }
+
+      // Filtre accès (Publique / Membre FTO)
+      if (selectedAccessTypes.length > 0) {
+        reports = reports.filter((r) => {
+          const accessType = r.public ? 'Publique' : 'Membre FTO';
+          return selectedAccessTypes.includes(accessType);
+        });
+      }
 
       renderReports(reports);
       updateCount(reports.length);
+
+      // Empty state accès : visible uniquement si 0 résultats
+      document.querySelectorAll<HTMLElement>(SELECTORS.FILTER_ACCESS_EMPTY).forEach((el) => {
+        el.style.display = reports.length === 0 ? '' : 'none';
+      });
 
       if (reports.length === 0) {
         showEmptyState();
@@ -246,13 +246,6 @@ function renderReports(reports: ReportResponse[]): void {
       container.appendChild(item);
     }
   });
-
-  // Notifier Finsweet qu'on a mis à jour la liste (si disponible)
-  if (typeof window.FsAttributes !== 'undefined') {
-    // console.log('[FTO Reports] Notifying Finsweet of list update...');
-    // Trigger Finsweet refresh si disponible
-    window.dispatchEvent(new CustomEvent('fs-attributes-loaded'));
-  }
 }
 
 /**
@@ -270,6 +263,19 @@ function createReportItem(report: ReportResponse): HTMLElement | null {
   const categoryEl = item.querySelector(SELECTORS.REPORT_CATEGORY);
   if (categoryEl) categoryEl.textContent = report.category_name || 'Non catégorisé';
 
+  // Icône de la catégorie (masquer si null)
+  const categoryIconEl = item.querySelector<HTMLImageElement>(SELECTORS.REPORT_CATEGORY_ICON);
+  if (categoryIconEl) {
+    const category = categories.find((c) => c.id === report.category_id);
+    if (category?.image_url) {
+      categoryIconEl.src = category.image_url;
+      categoryIconEl.alt = category.name;
+      categoryIconEl.style.display = '';
+    } else {
+      categoryIconEl.style.display = 'none';
+    }
+  }
+
   const imageEl = item.querySelector<HTMLImageElement>(SELECTORS.REPORT_IMAGE);
   if (imageEl && report.image_url) {
     imageEl.src = report.image_url;
@@ -282,12 +288,10 @@ function createReportItem(report: ReportResponse): HTMLElement | null {
   const linkEl = item.querySelector<HTMLAnchorElement>(SELECTORS.REPORT_LINK);
   if (linkEl) {
     if (isClickable) {
-      // Rapport cliquable : générer l'URL vers la page de détail
       linkEl.href = generateReportUrl(report);
       linkEl.style.pointerEvents = '';
       linkEl.style.cursor = '';
     } else {
-      // Rapport privé + non connecté : désactiver le lien
       linkEl.removeAttribute('href');
       linkEl.style.pointerEvents = 'none';
       linkEl.style.cursor = 'default';
@@ -311,19 +315,56 @@ function createReportItem(report: ReportResponse): HTMLElement | null {
   // Afficher le texte d'accès (Publique ou Membre FTO)
   const accessEl = item.querySelector<HTMLElement>(SELECTORS.REPORT_ACCESS);
   if (accessEl) {
-    const accessText = report.public ? 'Publique' : 'Membre FTO';
-    accessEl.textContent = accessText;
-    accessEl.setAttribute('fs-list-value', accessText);
+    accessEl.textContent = report.public ? 'Publique' : 'Membre FTO';
+  }
+
+  // Description Power BI (masquer si null)
+  const descriptionEl = item.querySelector<HTMLElement>(SELECTORS.REPORT_DESCRIPTION);
+  if (descriptionEl) {
+    if (report.powerbi_description) {
+      descriptionEl.textContent = report.powerbi_description;
+      descriptionEl.style.display = '';
+    } else {
+      descriptionEl.style.display = 'none';
+    }
+  }
+
+  // Date de dernière mise à jour Power BI (masquer le wrapper si null)
+  const dateWrapperEl = item.querySelector<HTMLElement>(SELECTORS.REPORT_DATE_WRAPPER);
+  const dateEl = item.querySelector<HTMLElement>(SELECTORS.REPORT_DATE);
+  if (report.powerbi_modified_date_time) {
+    if (dateWrapperEl) dateWrapperEl.style.display = '';
+    if (dateEl) {
+      const date = new Date(report.powerbi_modified_date_time);
+      dateEl.textContent = date.toLocaleDateString('fr-FR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+    }
+  } else {
+    if (dateWrapperEl) dateWrapperEl.style.display = 'none';
   }
 
   // Rendre l'élément visible (au cas où le template était caché)
   item.style.display = '';
-
-  // IMPORTANT: Garder les attributs Finsweet pour la compatibilité
-  // On change juste data-reports en data-reports-item pour éviter les conflits
   item.setAttribute('data-reports', 'item-rendered');
 
   return item;
+}
+
+// ============================================
+// Helpers
+// ============================================
+
+/**
+ * Reset une checkbox Webflow (input + indicateur visuel custom)
+ */
+function uncheckWebflowCheckbox(input: HTMLInputElement): void {
+  input.checked = false;
+  // Webflow custom checkbox : retirer la classe visuelle sur le sibling div
+  const indicator = input.parentElement?.querySelector('.w-checkbox-input');
+  if (indicator) indicator.classList.remove('w--redirected-checked');
 }
 
 // ============================================
@@ -357,9 +398,34 @@ function initFilters(): void {
         loadReports();
       });
     });
-
-    // console.log('[FTO Reports] Found', checkboxes.length, 'category checkboxes');
   }
+
+  // Filtre par accès (Publique / Membre FTO)
+  const accessWrapper = document.querySelector(SELECTORS.FILTER_ACCESS);
+  if (accessWrapper) {
+    const checkboxes = accessWrapper.querySelectorAll<HTMLInputElement>(
+      'input[data-access]:not([data-access="empty"]):not([data-access="clear"])'
+    );
+
+    checkboxes.forEach((checkbox) => {
+      checkbox.addEventListener('change', () => {
+        updateSelectedAccessTypes();
+        loadReports();
+      });
+    });
+
+    // Bouton reset filtre accès (peut être en dehors du wrapper)
+    document.querySelectorAll(SELECTORS.FILTER_ACCESS_CLEAR).forEach((btn) => {
+      btn.addEventListener('click', () => {
+        clearFilters();
+      });
+    });
+  }
+
+  // Masquer le empty state accès au démarrage
+  document.querySelectorAll<HTMLElement>(SELECTORS.FILTER_ACCESS_EMPTY).forEach((el) => {
+    el.style.display = 'none';
+  });
 
   // Filtre par recherche
   const searchFilter = document.querySelector<HTMLInputElement>(SELECTORS.FILTER_SEARCH);
@@ -404,8 +470,29 @@ function updateSelectedCategories(): void {
       }
     }
   });
+}
 
-  // console.log('[FTO Reports] Selected categories:', selectedCategoryNames);
+/**
+ * Met à jour la liste des types d'accès sélectionnés (checkboxes)
+ */
+function updateSelectedAccessTypes(): void {
+  const accessWrapper = document.querySelector(SELECTORS.FILTER_ACCESS);
+  if (!accessWrapper) return;
+
+  const checkboxes = accessWrapper.querySelectorAll<HTMLInputElement>(
+    'input[data-access]:not([data-access="empty"]):not([data-access="clear"])'
+  );
+
+  selectedAccessTypes = [];
+
+  checkboxes.forEach((checkbox) => {
+    if (checkbox.checked) {
+      const accessType = checkbox.getAttribute('data-access');
+      if (accessType) {
+        selectedAccessTypes.push(accessType);
+      }
+    }
+  });
 }
 
 /**
@@ -449,7 +536,6 @@ function populateCategoryCheckboxes(): void {
       checkboxTemplate = template.cloneNode(true) as HTMLElement;
       template.remove();
     } else {
-      // console.warn('[FTO Reports] No checkbox template found');
       return;
     }
   }
@@ -458,8 +544,12 @@ function populateCategoryCheckboxes(): void {
   const existingCheckboxes = wrapper.querySelectorAll(SELECTORS.FILTER_CATEGORY_TEMPLATE);
   existingCheckboxes.forEach((el) => el.remove());
 
-  // Créer une checkbox pour chaque catégorie
-  categories.forEach((cat) => {
+  // Filtrer les catégories présentes dans les rapports
+  const usedCategoryIds = new Set(allReports.map((r) => r.category_id));
+  const visibleCategories = categories.filter((cat) => usedCategoryIds.has(cat.id));
+
+  // Créer une checkbox pour chaque catégorie présente
+  visibleCategories.forEach((cat) => {
     if (checkboxTemplate) {
       const checkboxItem = checkboxTemplate.cloneNode(true) as HTMLElement;
 
@@ -491,8 +581,6 @@ function populateCategoryCheckboxes(): void {
       wrapper.appendChild(checkboxItem);
     }
   });
-
-  // console.log('[FTO Reports] Populated', categories.filter((c) => c.active).length, 'category checkboxes');
 }
 
 /**
@@ -501,21 +589,23 @@ function populateCategoryCheckboxes(): void {
 function clearFilters(): void {
   currentFilters = { active: true };
   selectedCategoryNames = [];
+  selectedAccessTypes = [];
 
   // Reset le select
   const categoryFilter = document.querySelector<HTMLSelectElement>(SELECTORS.FILTER_CATEGORY);
   if (categoryFilter) categoryFilter.value = '';
 
-  // Reset les checkboxes
-  const categoriesWrapper = document.querySelector(SELECTORS.FILTER_CATEGORIES);
-  if (categoriesWrapper) {
-    const checkboxes = categoriesWrapper.querySelectorAll<HTMLInputElement>(
-      `${SELECTORS.FILTER_CATEGORY_CHECKBOX}`
-    );
-    checkboxes.forEach((checkbox) => {
-      checkbox.checked = false;
-    });
-  }
+  // Reset les checkboxes catégories
+  document
+    .querySelectorAll<HTMLInputElement>(`${SELECTORS.FILTER_CATEGORY_CHECKBOX}`)
+    .forEach((cb) => uncheckWebflowCheckbox(cb));
+
+  // Reset les checkboxes accès
+  document
+    .querySelectorAll<HTMLInputElement>(
+      'input[data-access]:not([data-access="empty"]):not([data-access="clear"])'
+    )
+    .forEach((cb) => uncheckWebflowCheckbox(cb));
 
   // Reset la recherche
   const searchFilter = document.querySelector<HTMLInputElement>(SELECTORS.FILTER_SEARCH);
@@ -581,86 +671,6 @@ function updateCount(count: number): void {
     el.textContent = count.toString();
   });
 }
-
-/**
- * Compte les items visibles (après filtrage Finsweet)
- */
-function countVisibleItems(): number {
-  const container = document.querySelector(SELECTORS.LIST_CONTAINER);
-  if (!container) return 0;
-
-  const items = container.querySelectorAll<HTMLElement>('[data-reports="item-rendered"]');
-  let visibleCount = 0;
-
-  items.forEach((item) => {
-    // Un item est visible si son display n'est pas "none"
-    const style = window.getComputedStyle(item);
-    if (style.display !== 'none') {
-      visibleCount += 1;
-    }
-  });
-
-  return visibleCount;
-}
-
-/**
- * Met à jour le compteur basé sur les items visibles
- */
-function updateVisibleCount(): void {
-  const count = countVisibleItems();
-  updateCount(count);
-  // console.log('[FTO Reports] Visible items count:', count);
-
-  // Afficher/cacher l'état vide selon le nombre visible
-  if (count === 0) {
-    showEmptyState();
-  } else {
-    hideEmptyState();
-  }
-}
-
-/**
- * Initialise l'observation des changements de visibilité (pour Finsweet)
- */
-function initVisibilityObserver(): void {
-  const container = document.querySelector(SELECTORS.LIST_CONTAINER);
-  if (!container) return;
-
-  // Observer les changements d'attributs style sur les items
-  const observer = new MutationObserver((mutations) => {
-    let shouldUpdate = false;
-
-    mutations.forEach((mutation) => {
-      if (
-        mutation.type === 'attributes' &&
-        (mutation.attributeName === 'style' || mutation.attributeName === 'class')
-      ) {
-        shouldUpdate = true;
-      }
-      // Observer aussi l'ajout/suppression d'éléments
-      if (mutation.type === 'childList') {
-        shouldUpdate = true;
-      }
-    });
-
-    if (shouldUpdate) {
-      // Debounce pour éviter trop de mises à jour
-      clearTimeout(visibilityDebounce);
-      visibilityDebounce = setTimeout(updateVisibleCount, 50);
-    }
-  });
-
-  observer.observe(container, {
-    attributes: true,
-    attributeFilter: ['style', 'class'],
-    childList: true,
-    subtree: true,
-  });
-
-  // console.log('[FTO Reports] Visibility observer initialized');
-}
-
-let visibilityDebounce: ReturnType<typeof setTimeout>;
 
 // ============================================
 // Export
