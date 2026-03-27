@@ -354,6 +354,16 @@ function renderReport(report: ReportResponse): void {
     });
   });
 
+  // Description (masquer si null)
+  document.querySelectorAll<HTMLElement>(SELECTORS.DESCRIPTION).forEach((el) => {
+    if (report.powerbi_description) {
+      el.textContent = report.powerbi_description;
+      el.style.display = '';
+    } else {
+      el.style.display = 'none';
+    }
+  });
+
   // Image
   document.querySelectorAll<HTMLImageElement>(SELECTORS.IMAGE).forEach((el) => {
     if (report.image_url) {
