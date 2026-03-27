@@ -122,7 +122,7 @@ export interface ReportResponse {
   category_name?: string;
   powerbi_report_guid?: string; // GUID du rapport dans le service Power BI (vide si non connecté et public: false)
   powerbi_description?: string; // Description Power BI (enrichi si authentifié)
-  powerbi_modified_date_time?: string; // Date de dernière modification Power BI (enrichi si authentifié)
+  powerbi_lastupdate?: string; // Date de dernière mise à jour Power BI (enrichi si authentifié)
   image_url?: string;
   public: boolean; // true = rapport public, false = réservé aux membres
   active: boolean;

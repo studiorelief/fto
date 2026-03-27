@@ -332,15 +332,11 @@ function createReportItem(report: ReportResponse): HTMLElement | null {
   // Date de dernière mise à jour Power BI (masquer le wrapper si null)
   const dateWrapperEl = item.querySelector<HTMLElement>(SELECTORS.REPORT_DATE_WRAPPER);
   const dateEl = item.querySelector<HTMLElement>(SELECTORS.REPORT_DATE);
-  if (report.powerbi_modified_date_time) {
+  if (report.powerbi_lastupdate) {
     if (dateWrapperEl) dateWrapperEl.style.display = '';
     if (dateEl) {
-      const date = new Date(report.powerbi_modified_date_time);
-      dateEl.textContent = date.toLocaleDateString('fr-FR', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      });
+      const date = new Date(report.powerbi_lastupdate);
+      dateEl.textContent = date.getFullYear().toString();
     }
   } else {
     if (dateWrapperEl) dateWrapperEl.style.display = 'none';
