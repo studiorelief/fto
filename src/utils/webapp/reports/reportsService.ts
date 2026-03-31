@@ -135,6 +135,62 @@ export async function getReportEmbedConfig(id: number): Promise<ApiResponse<Embe
   return get<EmbedConfigResponse>(REPORT_ENDPOINTS.EMBED_CONFIG(id));
 }
 
+// ============================================
+// Embed Access Check
+// ============================================
+
+/** Cache des IDs de rapports inaccessibles (embed token refusé) */
+let inaccessibleReportIds: Set<number> | null = null;
+
+/**
+ * Vérifie si l'embed token est accessible pour un rapport donné.
+ * Retourne true si accessible, false si l'API renvoie une erreur.
+ */
+async function checkSingleReportAccess(reportId: number): Promise<boolean> {
+  const response = await getReportEmbedConfig(reportId);
+  return response.success;
+}
+
+/**
+ * Vérifie l'accès embed pour une liste de rapports (en parallèle).
+ * Retourne un Set des IDs inaccessibles. Les résultats sont mis en cache.
+ */
+export async function checkReportsEmbedAccess(reports: ReportResponse[]): Promise<Set<number>> {
+  if (inaccessibleReportIds) return inaccessibleReportIds;
+
+  const inaccessible = new Set<number>();
+
+  // Ne vérifier que les rapports non-publics (les publics n'ont pas besoin d'embed token)
+  const reportsToCheck = reports.filter((r) => !r.public);
+
+  const results = await Promise.allSettled(
+    reportsToCheck.map(async (report) => {
+      const accessible = await checkSingleReportAccess(report.id);
+      return { id: report.id, accessible };
+    })
+  );
+
+  for (const result of results) {
+    if (result.status === 'fulfilled' && !result.value.accessible) {
+      inaccessible.add(result.value.id);
+    }
+    // En cas d'erreur réseau, on considère le rapport comme inaccessible
+    if (result.status === 'rejected') {
+      // On ne peut pas récupérer l'ID ici, on ignore
+    }
+  }
+
+  inaccessibleReportIds = inaccessible;
+  return inaccessible;
+}
+
+/**
+ * Vérifie si un rapport est dans la liste des inaccessibles (depuis le cache)
+ */
+export function isReportInaccessible(reportId: number): boolean {
+  return inaccessibleReportIds?.has(reportId) ?? false;
+}
+
 /**
  * Vide le cache des rapports (utile après une modification)
  */
@@ -152,9 +208,17 @@ export function clearCategoriesCache(): void {
 /**
  * Vide tous les caches
  */
+/**
+ * Vide le cache d'accès embed
+ */
+export function clearEmbedAccessCache(): void {
+  inaccessibleReportIds = null;
+}
+
 export function clearAllCache(): void {
   clearReportsCache();
   clearCategoriesCache();
+  clearEmbedAccessCache();
 }
 
 export default {

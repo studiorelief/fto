@@ -10,7 +10,8 @@
  * - [data-report-detail="name"]       : Titre du rapport
  * - [data-report-detail="category"]   : Catégorie
  * - [data-report-detail="image"]      : Image
- * - [data-report-detail="description"]: Description (optionnel)
+ * - [data-report-detail="date"]       : Date de dernière mise à jour (optionnel, masqué si vide)
+ * - [data-report-detail="description"]: Description (optionnel, masqué si vide)
  * - [data-report-detail="embed"]      : Container div pour le SDK Power BI
  * - [data-report-detail="embed-locked"]: Message "Connectez-vous pour voir le rapport"
  * - [data-report-detail="loading"]    : État de chargement
@@ -54,6 +55,7 @@ const SELECTORS = {
   CATEGORY: '[data-report-detail="category"]',
   IMAGE: '[data-report-detail="image"]',
   CATEGORY_ICON: '[data-report-detail="category-icon"]',
+  DATE: '[data-report-detail="date"]',
   DESCRIPTION: '[data-report-detail="description"]',
   EMBED: '[data-report-detail="embed-container"]',
   EMBED_SHIMMER: '[data-report-detail="embed-shimmer"]',
@@ -352,6 +354,17 @@ function renderReport(report: ReportResponse): void {
         el.style.display = 'none';
       }
     });
+  });
+
+  // Date de mise à jour (masquer si null)
+  document.querySelectorAll<HTMLElement>(SELECTORS.DATE).forEach((el) => {
+    if (report.powerbi_lastupdate) {
+      const date = new Date(report.powerbi_lastupdate);
+      el.textContent = String(date.getFullYear());
+      el.style.display = '';
+    } else {
+      el.style.display = 'none';
+    }
   });
 
   // Description (masquer si null)

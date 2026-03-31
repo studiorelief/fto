@@ -27,9 +27,11 @@ import type { CategoryResponse, ReportResponse } from '../api/types';
 import { isAuthenticated } from '../auth';
 import { generateReportUrl } from './reportDetail';
 import {
+  checkReportsEmbedAccess,
   clearAllCache,
   getCategories,
   getFilteredReports,
+  isReportInaccessible,
   type ReportsFilters,
 } from './reportsService';
 
@@ -199,6 +201,11 @@ async function loadReports(): Promise<void> {
         });
       }
 
+      // Vérifier l'accès embed pour les users authentifiés (en parallèle)
+      if (isAuthenticated()) {
+        await checkReportsEmbedAccess(reports);
+      }
+
       renderReports(reports);
       updateCount(reports.length);
 
@@ -283,7 +290,8 @@ function createReportItem(report: ReportResponse): HTMLElement | null {
   }
 
   const userAuthenticated = isAuthenticated();
-  const isClickable = report.public || userAuthenticated;
+  const embedRestricted = userAuthenticated && isReportInaccessible(report.id);
+  const isClickable = (report.public || userAuthenticated) && !embedRestricted;
 
   const linkEl = item.querySelector<HTMLAnchorElement>(SELECTORS.REPORT_LINK);
   if (linkEl) {
