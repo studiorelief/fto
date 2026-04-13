@@ -14,13 +14,13 @@
  * - [data-report="category"]   : Catégorie
  * - [data-report="image"]      : Image (src)
  * - [data-report="link"]       : Lien vers le rapport (href)
- * - [data-report="access"]     : Texte d'accès ("Publique" ou "Membre FTO")
+ * - [data-report="access"]     : Texte d'accès ("Publique" ou "Membres FTO")
  * - [data-reports="accessible"]     : Visible si le rapport est accessible (public ou connecté)
  * - [data-reports="not-accessible"] : Visible si le rapport n'est pas accessible (privé + non connecté)
  *
  * Filtres accès (checkboxes Webflow) :
  * - [data-reports-filter="access"] input[data-access="Publique"]
- * - [data-reports-filter="access"] input[data-access="Membre FTO"]
+ * - [data-reports-filter="access"] input[data-access="Membres FTO"]
  */
 
 import type { CategoryResponse, ReportResponse } from '../api/types';
@@ -70,7 +70,7 @@ const SELECTORS = {
   REPORT_CATEGORY_ICON: '[data-report="category-icon"]',
   REPORT_DESCRIPTION: '[data-report="description"]',
   REPORT_PRIVATE: '[data-reports="private"]', // Badge "Réservé aux membres"
-  REPORT_ACCESS: '[data-report="access"]', // Texte "Publique" ou "Membre FTO"
+  REPORT_ACCESS: '[data-report="access"]', // Texte "Publique" ou "Membres FTO"
   REPORT_ACCESSIBLE: '[data-reports="accessible"]', // Visible si accessible
   REPORT_NOT_ACCESSIBLE: '[data-reports="not-accessible"]', // Visible si non accessible
 } as const;
@@ -83,7 +83,7 @@ let itemTemplate: HTMLElement | null = null;
 let checkboxTemplate: HTMLElement | null = null; // Template pour les checkboxes catégories
 let currentFilters: ReportsFilters = { active: true };
 let selectedCategoryNames: string[] = []; // Pour les checkboxes multichoix
-let selectedAccessTypes: string[] = []; // Pour les checkboxes accès (Publique / Membre FTO)
+let selectedAccessTypes: string[] = []; // Pour les checkboxes accès (Publique / Membres FTO)
 let categories: CategoryResponse[] = [];
 let allReports: ReportResponse[] = [];
 
@@ -193,10 +193,10 @@ async function loadReports(): Promise<void> {
         populateCategoryCheckboxes();
       }
 
-      // Filtre accès (Publique / Membre FTO)
+      // Filtre accès (Publique / Membres FTO)
       if (selectedAccessTypes.length > 0) {
         reports = reports.filter((r) => {
-          const accessType = r.public ? 'Publique' : 'Membre FTO';
+          const accessType = r.public ? 'Publique' : 'Membres FTO';
           return selectedAccessTypes.includes(accessType);
         });
       }
@@ -320,10 +320,10 @@ function createReportItem(report: ReportResponse): HTMLElement | null {
     el.style.display = isClickable ? 'none' : '';
   });
 
-  // Afficher le texte d'accès (Publique ou Membre FTO)
+  // Afficher le texte d'accès (Publique ou Membres FTO)
   const accessEl = item.querySelector<HTMLElement>(SELECTORS.REPORT_ACCESS);
   if (accessEl) {
-    accessEl.textContent = report.public ? 'Publique' : 'Membre FTO';
+    accessEl.textContent = report.public ? 'Publique' : 'Membres FTO';
   }
 
   // Description Power BI (masquer si null)
@@ -404,7 +404,7 @@ function initFilters(): void {
     });
   }
 
-  // Filtre par accès (Publique / Membre FTO)
+  // Filtre par accès (Publique / Membres FTO)
   const accessWrapper = document.querySelector(SELECTORS.FILTER_ACCESS);
   if (accessWrapper) {
     const checkboxes = accessWrapper.querySelectorAll<HTMLInputElement>(
