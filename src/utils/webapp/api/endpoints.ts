@@ -4,7 +4,7 @@
  */
 
 // Base URL de l'API
-export const API_BASE_URL = 'https://fto.api.aosis.net:9090';
+export const API_BASE_URL = 'https://fto.api.aosis.net';
 
 // Endpoints d'authentification
 export const AUTH_ENDPOINTS = {
