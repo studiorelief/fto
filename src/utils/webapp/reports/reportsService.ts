@@ -69,6 +69,12 @@ export async function getReports(): Promise<ApiResponse<ReportResponse[]>> {
   const response = await get<ReportResponse[]>(REPORT_ENDPOINTS.LIST, false);
 
   if (response.success && response.data) {
+    // Tri par ordre croissant (les reports sans "order" sont placés à la fin)
+    response.data.sort((a, b) => {
+      const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
+      const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
+      return orderA - orderB;
+    });
     reportsCache = response.data;
   }
 

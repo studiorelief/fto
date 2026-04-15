@@ -126,6 +126,7 @@ export interface ReportResponse {
   image_url?: string;
   public: boolean; // true = rapport public, false = réservé aux membres
   active: boolean;
+  order?: number; // Ordre d'affichage (tri croissant)
   created_at?: string;
   updated_at?: string;
 }
