@@ -761,13 +761,14 @@ function updateUserInfo(user: { name: string; email: string; company_name?: stri
     el.textContent = user.email;
   });
 
-  // Entreprise
-  if (user.company_name) {
-    const companyElements = document.querySelectorAll<HTMLElement>(SELECTORS.USER_COMPANY);
-    companyElements.forEach((el) => {
-      el.textContent = user.company_name || '';
-    });
-  }
+  // Entreprise (masquer si non renseignée : vide ou placeholder "Default Company")
+  const companyName = user.company_name?.trim() || '';
+  const hasCompany = companyName !== '' && companyName.toLowerCase() !== 'default company';
+  const companyElements = document.querySelectorAll<HTMLElement>(SELECTORS.USER_COMPANY);
+  companyElements.forEach((el) => {
+    el.textContent = hasCompany ? companyName : '';
+    el.style.display = hasCompany ? '' : 'none';
+  });
 }
 
 // ============================================

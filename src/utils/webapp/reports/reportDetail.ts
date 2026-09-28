@@ -23,6 +23,7 @@ import gsap from 'gsap';
 
 import type { EmbedConfigResponse, ReportResponse } from '../api/types';
 import { isAuthenticated } from '../auth';
+import { initReportFullscreen } from './reportFullscreen';
 import { getCategories, getReportById, getReportEmbedConfig } from './reportsService';
 
 // ============================================
@@ -271,6 +272,9 @@ async function embedPowerBiReport(
     iframe.style.width = 'calc(100% + 4px)';
     iframe.style.height = 'calc(100% + 4px)';
   }
+
+  // Bouton plein écran (après l'embed : le SDK réécrit le contenu du container)
+  initReportFullscreen(container);
 
   // Masquer le shimmer quand le rapport est rendu
   currentReport.on('rendered', () => {
