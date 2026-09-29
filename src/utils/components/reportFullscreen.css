@@ -5,7 +5,7 @@
 
 .report_fullscreen-button {
   position: absolute;
-  top: 0.75rem;
+  bottom: 0.75rem;
   right: 0.75rem;
   z-index: 2;
   display: inline-flex;
