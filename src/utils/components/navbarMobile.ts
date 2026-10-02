@@ -66,8 +66,8 @@ export function navMobile() {
   // Marquer comme initialisé
   isNavMobileInitialized = true;
 
-  // Media query pour détecter les écrans < 991px
-  const mobileMediaQuery = window.matchMedia('(max-width: 991px)');
+  // Media query pour détecter les écrans < 1360px (menu mobile, cf. navbar.css)
+  const mobileMediaQuery = window.matchMedia('(max-width: 1360px)');
 
   // Fonction pour initialiser l'état mobile (seulement si on est en mobile)
   function initMobileState() {

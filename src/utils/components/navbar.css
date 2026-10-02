@@ -6,3 +6,104 @@
   z-index: 1000;
   will-change: transform;
 }
+
+/*
+  Menu mobile étendu jusqu'à 1360px (Webflow le gère nativement < 991px).
+  Réplique les styles tablette de la navbar sur la plage 992px → 1360px.
+*/
+@media screen and (min-width: 992px) and (max-width: 1360px) {
+  .nav_component {
+    padding-top: var(--_layout---spacing--xlarge);
+    padding-bottom: var(--_layout---spacing--xlarge);
+    height: calc(4rem + var(--_layout---spacing--xlarge) * 2);
+  }
+  /* Variables Webflow en valeur tablette, limitées à la navbar */
+  .nav_container {
+    --_layout---component--navbar: 4.5rem;
+    height: var(--_layout---component--navbar);
+  }
+  .nav_brand,
+  .nav_brand.w--current {
+    z-index: 1;
+    height: 2rem;
+    padding-left: 0;
+  }
+  .nav_menu {
+    --_layout---section-padding--global-padding: 1.25rem;
+    z-index: 0;
+    background-color: var(--_theme---background-fill--transparent);
+    min-width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    max-height: 100svh;
+    transition: transform 0.4s;
+    display: block;
+    position: fixed;
+    inset: 0%;
+    transform: translate(100%);
+  }
+  .nav_menu_link {
+    padding-top: var(--_layout---spacing--xxlarge);
+    padding-bottom: var(--_layout---spacing--xxlarge);
+    padding-left: var(--_layout---spacing--xlarge);
+    border-bottom: 1px solid var(--_theme---background-surface--secondary);
+    font-weight: var(--font-weight--bold);
+    border-radius: 0;
+    justify-content: flex-start;
+    align-items: center;
+  }
+  .nav_mobile-button {
+    z-index: 1;
+    width: var(--_sizes---icons--medium);
+    height: var(--_sizes---icons--medium);
+    padding: var(--_layout---spacing--xxsmall);
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    position: relative;
+  }
+  .nav_mobile-open {
+    justify-content: center;
+    align-items: center;
+    display: flex;
+  }
+  .nav_mobile-close {
+    justify-content: center;
+    align-items: center;
+    display: none;
+  }
+  .nav_menu-mobile {
+    grid-column-gap: var(--_layout---spacing--none);
+    grid-row-gap: var(--_layout---spacing--none);
+    border-top: 1px solid var(--_theme---background-surface--secondary);
+    flex-flow: column;
+  }
+  .nav_cta-wrapper {
+    height: auto;
+    padding-right: var(--_layout---spacing--xlarge);
+    padding-left: var(--_layout---spacing--xlarge);
+    flex-flow: column;
+    justify-content: flex-end;
+    align-items: stretch;
+  }
+  .nav_open {
+    z-index: 1;
+    margin: var(--_layout---section-padding--global-padding);
+    padding-top: var(--_layout---component--navbar);
+    padding-bottom: var(--_layout---spacing--xlarge);
+    border-radius: var(--_sizes---border-radius--large);
+    background-color: var(--_theme---background-surface--primary);
+    height: calc(100dvh - var(--_layout---spacing--xhuge));
+    max-height: calc(100svh - var(--_layout---spacing--xhuge));
+    flex-flow: column;
+    justify-content: space-between;
+    align-items: stretch;
+    position: relative;
+  }
+  .nav_menu-background {
+    z-index: 0;
+    background-color: #323c7380;
+    position: absolute;
+    inset: 0%;
+  }
+}
