@@ -136,7 +136,8 @@ export function navMobile() {
   function resetOnDesktop() {
     if (!navMenu || !navButton) return;
 
-    // Fermer le menu et réinitialiser les styles
+    // Fermer le menu et réinitialiser les styles (display inline ajouté à l'ouverture)
+    navMenu.style.display = '';
     navMenu.style.transform = '';
     navMenu.style.transition = '';
     navButton.classList.remove('is-active');
@@ -207,4 +208,26 @@ export function navMobile() {
       resetOnDesktop();
     }
   });
+
+  // Entre 992px et 1360px : le CTA reste visible dans la barre, à côté du burger
+  const ctaWrapper = document.querySelector('.nav_cta-wrapper') as HTMLElement | null;
+  const ctaParent = ctaWrapper?.parentElement;
+  if (!ctaWrapper || !ctaParent || !navButton.parentElement) return;
+
+  const ctaNextSibling = ctaWrapper.nextSibling;
+  const navContainer = navButton.parentElement;
+  const ctaMediaQuery = window.matchMedia('(min-width: 992px) and (max-width: 1360px)');
+
+  function placeCta() {
+    if (!ctaWrapper || !ctaParent) return;
+
+    if (ctaMediaQuery.matches) {
+      navContainer.insertBefore(ctaWrapper, navButton);
+    } else {
+      ctaParent.insertBefore(ctaWrapper, ctaNextSibling);
+    }
+  }
+
+  placeCta();
+  ctaMediaQuery.addEventListener('change', placeCta);
 }

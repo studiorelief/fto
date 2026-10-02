@@ -106,4 +106,15 @@
     position: absolute;
     inset: 0%;
   }
+  /* CTA déplacé dans la barre par navbarMobile.ts, à gauche du burger */
+  .nav_container > .nav_cta-wrapper {
+    height: auto;
+    margin-left: auto;
+    margin-right: var(--_layout---spacing--large);
+    padding-left: 0;
+    padding-right: 0;
+    flex-flow: row;
+    justify-content: center;
+    align-items: center;
+  }
 }
